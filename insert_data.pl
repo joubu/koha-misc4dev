@@ -10,6 +10,7 @@ use C4::Installer;
 use C4::Context;
 use Koha::IssuingRule; # Should not be needed but Koha::IssuingRules does not use it
 use Koha::IssuingRules;
+use Koha::Patron::Categories;
 
 my $marcflavour = 'MARC21';
 my ( $help, $verbose );
@@ -40,8 +41,10 @@ our $installer = C4::Installer->new;
 my $sql_dir = dirname( abs_path($0) ) . '/data/sql';
 my @records_files = ( "$sql_dir/$lc_marcflavour/biblio.sql", "$sql_dir/$lc_marcflavour/biblioitems.sql", "$sql_dir/$lc_marcflavour/items.sql", "$sql_dir/$lc_marcflavour/auth_header.sql" );
 
+C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382df - 16520
 insert_records();
 insert_default_circ_rule();
+configure_selfreg();
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -79,6 +82,23 @@ sub insert_default_circ_rule {
                  onshelfholds => 1,
                 opacitemholds => 'Y',
              article_requests => 'yes',
+        }
+    )->store;
+}
+
+sub configure_selfreg {
+    C4::Context->set_preference('PatronSelfRegistration', 1);
+    C4::Context->set_preference('PatronSelfRegistrationDefaultCategory', 'SELFREG');
+    Koha::Patron::Category->new(
+        {
+                 categorycode => 'SELFREG',
+                  description => 'Self registration',
+              enrolmentperiod => 99,
+                 enrolmentfee => 0,
+                   reservefee => 0,
+                hidelostitems => 0,
+                category_type => 'A',
+              default_privacy => 'default',
         }
     )->store;
 }
