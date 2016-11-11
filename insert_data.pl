@@ -8,8 +8,10 @@ use Cwd 'abs_path';
 
 use C4::Installer;
 use C4::Context;
+use Koha::AuthUtils qw( hash_password );
 use Koha::IssuingRule; # Should not be needed but Koha::IssuingRules does not use it
 use Koha::IssuingRules;
+use Koha::Patrons;
 use Koha::Patron::Categories;
 
 my $marcflavour = 'MARC21';
@@ -45,6 +47,7 @@ C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382d
 insert_records();
 insert_default_circ_rule();
 configure_selfreg();
+configure_selfcheckout();
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -101,6 +104,33 @@ sub configure_selfreg {
               default_privacy => 'default',
         }
     )->store;
+}
+
+sub configure_selfcheckout {
+    C4::Context->set_preference('WebBasedSelfCheck', 1);
+    C4::Context->set_preference('AllowSelfCheckReturns', 1);
+    C4::Context->set_preference('AutoSelfCheckAllowed', 1);
+    C4::Context->set_preference('AutoSelfCheckID', 'self_checkout');
+    C4::Context->set_preference('AutoSelfCheckPass', 'self_checkout');
+
+    my $password = hash_password('self_checkout');
+
+    my $patron = Koha::Patron->new(
+        {
+                 cardnumber => 'self_checkout',
+                     userid => 'self_checkout',
+                   password => $password,
+                    surname => 'Self-checkout patron',
+               categorycode => 'S',
+                 branchcode => 'CPL',
+                 dateexpiry => 2099-12-31,
+                      flags => 0,
+        }
+    )->store;
+    my $dbh = C4::Context->dbh;
+    $dbh->do(q|
+        INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
+    |, undef, $patron->borrowernumber, 1, 'self_checkout' );
 }
 
 =head1 SYNOPSIS
