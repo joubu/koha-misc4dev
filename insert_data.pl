@@ -8,6 +8,8 @@ use Cwd 'abs_path';
 
 use C4::Installer;
 use C4::Context;
+use Koha::IssuingRule; # Should not be needed but Koha::IssuingRules does not use it
+use Koha::IssuingRules;
 
 my $marcflavour = 'MARC21';
 my ( $help, $verbose );
@@ -39,6 +41,7 @@ my $sql_dir = dirname( abs_path($0) ) . '/data/sql';
 my @records_files = ( "$sql_dir/$lc_marcflavour/biblio.sql", "$sql_dir/$lc_marcflavour/biblioitems.sql", "$sql_dir/$lc_marcflavour/items.sql", "$sql_dir/$lc_marcflavour/auth_header.sql" );
 
 insert_records();
+insert_default_circ_rule();
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -56,6 +59,28 @@ sub insert_records {
     for my $file ( @records_files ) {
         execute_sqlfile( $file );
     }
+}
+
+sub insert_default_circ_rule {
+    say "Inserting default circ rule..."
+        if $verbose;
+    Koha::IssuingRule->new(
+        {
+                 categorycode => '*',
+                     itemtype => '*',
+                   branchcode => '*',
+                  maxissueqty => 5,
+            maxonsiteissueqty => 5,
+                  issuelength => 5,
+                   lengthunit => 'days',
+                renewalperiod => 5,
+              reservesallowed => 5,
+             holds_per_record => 2,
+                 onshelfholds => 1,
+                opacitemholds => 'Y',
+             article_requests => 'yes',
+        }
+    )->store;
 }
 
 =head1 SYNOPSIS
