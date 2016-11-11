@@ -13,6 +13,7 @@ use Koha::IssuingRule; # Should not be needed but Koha::IssuingRules does not us
 use Koha::IssuingRules;
 use Koha::Patrons;
 use Koha::Patron::Categories;
+use t::lib::TestBuilder;
 
 my $marcflavour = 'MARC21';
 my ( $help, $verbose );
@@ -48,6 +49,7 @@ insert_records();
 insert_default_circ_rule();
 configure_selfreg();
 configure_selfcheckout();
+insert_acquisition_data();
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -131,6 +133,69 @@ sub configure_selfcheckout {
     $dbh->do(q|
         INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
     |, undef, $patron->borrowernumber, 1, 'self_checkout' );
+}
+
+sub insert_acquisition_data {
+    my $builder = t::lib::TestBuilder->new;
+    my $budget = $builder->build({ source => 'Aqbudgetperiod', value => {
+    budget_period_startdate => '2016-01-01',
+      budget_period_enddate => '2026-12-31',
+       budget_period_active => 1,
+  budget_period_description => 'Main budget',
+        budget_period_total => 1000000,
+    }});
+
+    my $fund_1 = $builder->build({ source => 'Aqbudget', value => {
+           budget_parent_id => undef,
+                budget_code => 'Main fund',
+                budget_name => 'Main fund',
+              budget_amount => 1000,
+              budget_encumb => 10,
+           budget_period_id => $budget->{budget_period_id},
+    }});
+    my $fund_1_2 = $builder->build({ source => 'Aqbudget', value => {
+           budget_parent_id => $fund_1->{budget_id},
+                budget_code => 'Fund 1_2',
+                budget_name => 'Fund 1_2',
+              budget_amount => 100,
+           budget_period_id => $budget->{budget_period_id},
+    }});
+    my $fund_2 = $builder->build({ source => 'Aqbudget', value => {
+           budget_parent_id => undef,
+                budget_code => 'Secondary fund',
+                budget_name => 'Secondary fund',
+              budget_amount => 1000,
+              budget_encumb => 10,
+           budget_period_id => $budget->{budget_period_id},
+    }});
+
+    C4::Context->set_preference('gist', '0|0.12|0.1965');
+    my $vendor = $builder->build({ source => 'Aqbookseller', value => {
+                       name => 'My Vendor',
+                     active => 1,
+                  listprice => 'USD',
+               invoiceprice => 'USD',
+                     gstreg => 0,
+                 listincgst => 0,
+              invoiceincgst => 0,
+                   tax_rate => 0.1965,
+                   discount => 10,
+               deliverytime => 3,
+    }});
+
+    my $basket = $builder->build({ source => 'Aqbasket', value => {
+                 basketname => 'My Basket',
+                       note => 'An internal note',
+             booksellernote => 'A vendor note',
+               booksellerid => $vendor->{id},
+               authorisedby => 51,
+              deliveryplace => 'CPL',
+               billingplace => 'CPL',
+                  closedate => undef, # Need the undefs otherwise TestBuilder will create the FK with random data
+                     branch => undef,
+             contractnumber => undef,
+              basketgroupid => undef,
+    }});
 }
 
 =head1 SYNOPSIS
