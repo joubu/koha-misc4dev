@@ -8,6 +8,7 @@ use Cwd 'abs_path';
 
 use C4::Installer;
 use C4::Context;
+use Koha;
 use Koha::AuthUtils qw( hash_password );
 use Koha::IssuingRule; # Should not be needed but Koha::IssuingRules does not use it
 use Koha::IssuingRules;
@@ -28,6 +29,8 @@ pod2usage(1) if $help;
 
 $marcflavour = uc($marcflavour);
 my $lc_marcflavour = lc $marcflavour;
+our $VERSION = $Koha::VERSION;
+$VERSION =~ s|\.||g;
 
 if (     $marcflavour ne 'MARC21'
      and $marcflavour ne 'UNIMARC' ) {
@@ -86,7 +89,7 @@ sub insert_default_circ_rule {
              holds_per_record => 2,
                  onshelfholds => 1,
                 opacitemholds => 'Y',
-             article_requests => 'yes',
+             ( $VERSION > '160600035' ? ( article_requests => 'yes' ) : () ),
         }
     )->store;
 }
@@ -195,6 +198,7 @@ sub insert_acquisition_data {
                      branch => undef,
              contractnumber => undef,
               basketgroupid => undef,
+            ( $VERSION > '32300056' ? ( is_standing   => 0 ) : () ),
     }});
 }
 
