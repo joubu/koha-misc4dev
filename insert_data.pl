@@ -8,13 +8,7 @@ use Cwd 'abs_path';
 
 use C4::Installer;
 use C4::Context;
-use Koha;
 use Koha::AuthUtils qw( hash_password );
-use Koha::IssuingRule; # Should not be needed but Koha::IssuingRules does not use it
-use Koha::IssuingRules;
-use Koha::Patrons;
-use Koha::Patron::Categories;
-use t::lib::TestBuilder;
 
 my $marcflavour = 'MARC21';
 my ( $help, $verbose );
@@ -29,8 +23,7 @@ pod2usage(1) if $help;
 
 $marcflavour = uc($marcflavour);
 my $lc_marcflavour = lc $marcflavour;
-our $VERSION = $Koha::VERSION;
-$VERSION =~ s|\.||g;
+our $VERSION = get_version();
 
 if (     $marcflavour ne 'MARC21'
      and $marcflavour ne 'UNIMARC' ) {
@@ -45,14 +38,16 @@ if ( $marcflavour eq 'UNIMARC' ) {
 our $root      = C4::Context->config('intranetdir');
 our $installer = C4::Installer->new;
 my $sql_dir = dirname( abs_path($0) ) . '/data/sql';
-my @records_files = ( "$sql_dir/$lc_marcflavour/biblio.sql", "$sql_dir/$lc_marcflavour/biblioitems.sql", "$sql_dir/$lc_marcflavour/items.sql", "$sql_dir/$lc_marcflavour/auth_header.sql" );
+my $major_version = join '', ( ( $VERSION =~ m|^3| ) ? ( split //, $VERSION )[0..2] : ( split //, $VERSION )[0..3] );
+my $sql_files_dir = "$sql_dir/$lc_marcflavour/$major_version";
+our @records_files = ( "$sql_files_dir/biblio.sql", "$sql_files_dir/biblioitems.sql", "$sql_files_dir/items.sql", "$sql_files_dir/auth_header.sql" );
 
 C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382df - 16520
 insert_records();
 insert_default_circ_rule();
 configure_selfreg();
 configure_selfcheckout();
-insert_acquisition_data();
+insert_acquisition_data() if $major_version > 318;
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -75,40 +70,45 @@ sub insert_records {
 sub insert_default_circ_rule {
     say "Inserting default circ rule..."
         if $verbose;
-    Koha::IssuingRule->new(
-        {
-                 categorycode => '*',
-                     itemtype => '*',
-                   branchcode => '*',
-                  maxissueqty => 5,
-            maxonsiteissueqty => 5,
-                  issuelength => 5,
-                   lengthunit => 'days',
-                renewalperiod => 5,
-              reservesallowed => 5,
-             holds_per_record => 2,
-                 onshelfholds => 1,
-                opacitemholds => 'Y',
-             ( $VERSION > '160600035' ? ( article_requests => 'yes' ) : () ),
-        }
-    )->store;
+    my $dbh = C4::Context->dbh;
+    $dbh->do(
+        q|INSERT INTO issuingrules (
+        categorycode, itemtype, branchcode,
+        maxissueqty
+    | . ( $VERSION >= '32100035' ? ', maxonsiteissueqty' : '' ) . q|
+        , issuelength
+        , lengthunit
+        , renewalperiod
+        , reservesallowed
+    | . ( $VERSION >= '160600018' ? ', holds_per_record' : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', onshelfholds'     : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', opacitemholds'    : '' ) . q|
+    | . ( $VERSION >= '160600037' ? ', article_requests' : '' ) . q|
+    ) VALUES (
+        '*', '*', '*',
+        5
+    | . ( $VERSION >= '32100035' ? ', 5' : '' ) . q|
+        , 5
+        , 'days'
+        , 5
+        , 5
+    | . ( $VERSION >= '160600018' ? ', 2 '     : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', 1 '     : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', "Y" '   : '' ) . q|
+    | . ( $VERSION >= '160600037' ? ', "yes" ' : '' ) . q|
+    )|
+    );
 }
 
 sub configure_selfreg {
     C4::Context->set_preference('PatronSelfRegistration', 1);
     C4::Context->set_preference('PatronSelfRegistrationDefaultCategory', 'SELFREG');
-    Koha::Patron::Category->new(
-        {
-                 categorycode => 'SELFREG',
-                  description => 'Self registration',
-              enrolmentperiod => 99,
-                 enrolmentfee => 0,
-                   reservefee => 0,
-                hidelostitems => 0,
-                category_type => 'A',
-              default_privacy => 'default',
-        }
-    )->store;
+    my $dbh = C4::Context->dbh;
+    $dbh->do(q|INSERT INTO categories ( categorycode, description, enrolmentperiod, enrolmentfee, reservefee, hidelostitems, category_type
+    | . ( $VERSION >= '31700004' ? ', default_privacy' : '' ) . q|
+    ) VALUES ( 'SELFREG', 'Self registration', 99, 0, 0, 0, 'A'
+    | . ( $VERSION >= '31700004' ? ', "default"' : '' ) . q|
+    )|);
 }
 
 sub configure_selfcheckout {
@@ -120,25 +120,18 @@ sub configure_selfcheckout {
 
     my $password = hash_password('self_checkout');
 
-    my $patron = Koha::Patron->new(
-        {
-                 cardnumber => 'self_checkout',
-                     userid => 'self_checkout',
-                   password => $password,
-                    surname => 'Self-checkout patron',
-               categorycode => 'S',
-                 branchcode => 'CPL',
-                 dateexpiry => 2099-12-31,
-                      flags => 0,
-        }
-    )->store;
     my $dbh = C4::Context->dbh;
-    $dbh->do(q|
-        INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
-    |, undef, $patron->borrowernumber, 1, 'self_checkout' );
+    $dbh->do(q|INSERT INTO borrowers ( cardnumber, userid, password, surname, categorycode, branchcode, dateexpiry, flags ) VALUES ( 'self_checkout', 'self_checkout', ?, 'Self-checkout patron', 'S', 'CPL', 2099-12-31, 0 )|, undef, $password);
+    my $borrowernumber = $dbh->last_insert_id(undef, undef, 'borrowers', undef);
+    if ( $VERSION >= "32100027" ) {
+        $dbh->do(q|
+            INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
+        |, undef, $borrowernumber, 1, 'self_checkout' );
+    }
 }
 
 sub insert_acquisition_data {
+    require t::lib::TestBuilder;
     my $builder = t::lib::TestBuilder->new;
     my $budget = $builder->build({ source => 'Aqbudgetperiod', value => {
     budget_period_startdate => '2016-01-01',
@@ -202,6 +195,20 @@ sub insert_acquisition_data {
     }});
 }
 
+sub get_version {
+    my $version;
+    eval { require Koha };
+    if ( $@ ) {
+        require 'kohaversion.pl';
+        $version = kohaversion();
+    } else {
+        $version = $Koha::VERSION;
+        $version =~ s|\.||g;
+    }
+    $version =~ s|\.||g;
+    return $version;
+}
+
 =head1 SYNOPSIS
 
 insert_data.pl [ --marcflavour <marcflavour> ]
@@ -242,7 +249,7 @@ Jonathan Druart <jonathan.druart at bugs.koha-community.org>
 
 =head1 COPYRIGHT
 
-Copyright 2013 BibLibre
+Copyright 2016 Jonathan Druart
 
 =head1 LICENSE
 
