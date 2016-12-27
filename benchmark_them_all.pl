@@ -20,7 +20,7 @@ use IPC::Cmd qw( run );
 
 my $iterations = 5;
 
-my @versions = qw( 3.14 3.16 3.18 3.20 3.22 16.05 16.11 );
+my @versions = qw( 16.11 );
 our $koha_root = q|/home/vagrant/kohaclone|;
 my $git_remote = q|Joubu|;
 our $verbose = 0;
@@ -44,13 +44,17 @@ for my $version ( @versions ) {
 
     die "Fail to create a local branch ($branch_name) from repo '$git_remote'. Make sure it exists" unless $success;
 
-    if ( -f $koha_root . '/debian/templates/plack.psgi' ) {
-        my @output = do_all_iterations( "with_plack" );
-        write_output( $version . '_plack', @output );
-    }
-
     my @output = do_all_iterations();
-    write_output( $version, @output );
+    write_output( $version . '', @output );
+
+    @output = do_all_iterations( "with_plack" );
+    write_output( $version . '_plack', @output );
+
+    @output = do_all_iterations( undef, "with_memcached" );
+    write_output( $version . '_memcached', @output );
+
+    @output = do_all_iterations( "with_plack", "with_memcached" );
+    write_output( $version . '_plack_and_memcached', @output );
 }
 
 sub reset_my_db {
@@ -66,6 +70,10 @@ sub restart_memcached {
     $cmd = q|sudo service memcached restart|;
     run( command => $cmd, verbose => $verbose );
 }
+sub stop_memcached {
+    $cmd = q|sudo service memcached stop|;
+    run( command => $cmd, verbose => $verbose );
+}
 sub restart_plack {
     $cmd = qq|sudo koha-plack --restart $kohadev|;
     run( command => $cmd, verbose => $verbose );
@@ -76,7 +84,7 @@ sub restart_apache {
 }
 
 sub enable_plack {
-    $cmd = qq|sudo cp $koha_root . '/debian/templates/plack.psgi /etc/koha/sites/kohadev/plack.psgi|;
+    $cmd = qq|sudo cp $koha_root/debian/templates/plack.psgi /etc/koha/sites/kohadev/plack.psgi|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
     `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
     `sudo perl -p -i -e s#/usr/share/koha/lib#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
@@ -92,19 +100,19 @@ sub disable_plack {
 }
 
 sub do_all_iterations {
-    my ( $with_plack ) = @_;
-    msg( ( $with_plack ? "With Plack" : "Without Plack" ), 4);
+    my ( $with_plack, $with_memcached ) = @_;
+    msg( ( $with_plack ? "With Plack" : "Without Plack" ) . ( $with_memcached ? " With Memcached" : " Without Memcached"), 4);
     msg("Reset the database", 3);
-    reset_my_db();
-    msg("Restart memcached", 3);
-    restart_memcached();
+    #reset_my_db();
+    msg( ( $with_memcached ? "Restart memcached" : "Stop memcached" ), 3);
+    $with_memcached ? restart_memcached() : stop_memcached();
     msg( ( $with_plack ? "Enable Plack" : "Disable Plack" ), 3);
     $with_plack ? enable_plack() : disable_plack();
     my ( @output, $output );
     msg("First shoot to populate caches", 3);
     do_one_iteration();
     for my $i ( 1 .. $iterations ) {
-        msg("Processing Iteration $i/$iterations" . ( $with_plack ? " (plack)" : "" ), 3);
+        msg("Processing Iteration $i/$iterations" . ( $with_plack ? " (plack)" : "" ) . ( $with_memcached ? " (memcached)" : "" ), 3);
         $output = do_one_iteration();
         push @output, @$output;
     }
