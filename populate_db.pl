@@ -100,7 +100,6 @@ our $data_dir  = "$root/installer/data/mysql";
 our $installer = C4::Installer->new;
 my $lang                = 'en';
 my $koha_structure_file = "$data_dir/kohastructure.sql";
-warn $koha_structure_file;
 my @sample_files_mandatory = (
     glob("$data_dir/mandatory/*.sql"),
     "$data_dir/audio_alerts.sql",
