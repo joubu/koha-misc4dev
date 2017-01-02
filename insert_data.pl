@@ -55,6 +55,11 @@ our $installer = C4::Installer->new;
 my $sql_dir = dirname( abs_path($0) ) . '/data/sql';
 my $major_version = join '', ( ( $VERSION =~ m|^3| ) ? ( split //, $VERSION )[0..2] : ( split //, $VERSION )[0..3] );
 my $sql_files_dir = "$sql_dir/$lc_marcflavour/$major_version";
+my $version_data_directory = $major_version;
+while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
+    $version_data_directory--;
+    $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory";
+}
 our @records_files = ( "$sql_files_dir/biblio.sql", "$sql_files_dir/biblioitems.sql", "$sql_files_dir/items.sql", "$sql_files_dir/auth_header.sql" );
 
 C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382df - 16520
