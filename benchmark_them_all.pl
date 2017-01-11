@@ -76,10 +76,11 @@ sub restart_apache {
 }
 
 sub enable_plack {
-    $cmd = qq|sudo cp $koha_root . '/debian/templates/plack.psgi /etc/koha/sites/kohadev/plack.psgi|;
+    $cmd = qq|sudo cp $koha_root/debian/templates/plack.psgi /etc/koha/sites/kohadev/plack.psgi|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
     `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
     `sudo perl -p -i -e s#/usr/share/koha/lib#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
+    `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#/home/vagrant/kohaclone/opac# /etc/koha/sites/kohadev/plack.psgi`;
     $cmd = qq|sudo koha-plack --enable kohadev|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
     restart_plack();
