@@ -61,6 +61,8 @@ while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
     $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory";
 }
 our @records_files = ( "$sql_files_dir/biblio.sql", "$sql_files_dir/biblioitems.sql", "$sql_files_dir/items.sql", "$sql_files_dir/auth_header.sql" );
+push @records_files, "$sql_files_dir/biblio_metadata.sql"
+    if $VERSION >= '161200004';
 
 C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382df - 16520
 insert_records();
