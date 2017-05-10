@@ -18,6 +18,22 @@ use File::Basename qw( dirname );
 use Cwd 'abs_path';
 use IPC::Cmd qw( run );
 
+use Getopt::Long;
+
+my $userid;
+my $password;
+
+GetOptions(
+    'userid=s'   => \$userid,
+    'password=s' => \$password
+);
+
+my $create_superlibrarian_opts = "";
+$create_superlibrarian_opts .= "--userid $userid "
+	if defined $userid;
+$create_superlibrarian_opts .= "--password $password "
+	if defined $password;
+
 my $misc_dir = dirname( abs_path( $0 ) );
 
 my ( $cmd, $success, $error_code, $full_buf, $stdout_buf, $stderr_buf );
@@ -26,7 +42,7 @@ my $PERL5LIB = $ENV{PERL5LIB};
 $cmd = "sudo koha-shell kohadev -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
-$cmd = "sudo koha-shell kohadev -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl'";
+$cmd = "sudo koha-shell kohadev -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl $create_superlibrarian_opts'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
 $cmd = "sudo koha-shell kohadev -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl'";
