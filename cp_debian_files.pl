@@ -14,11 +14,18 @@
 # This program comes with ABSOLUTELY NO WARRANTY;
 
 use Modern::Perl;
-use File::Basename qw( dirname );
+
 use Cwd 'abs_path';
+use File::Basename qw( dirname );
+use Getopt::Long;
 use IPC::Cmd qw( run );
 
-my $koha_dir = '/home/vagrant/kohaclone'; # FIXME hardcoded
+my $koha_dir = '/home/vagrant/kohaclone';
+
+GetOptions(
+    'koha_dir=s' => \$koha_dir
+);
+
 my $koha_debian_dir = "$koha_dir/debian";
 
 open my $fh, '<', $koha_debian_dir . '/koha-common.install' or die "Cannnot open file $!";
