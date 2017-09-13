@@ -32,10 +32,12 @@ populate_db.pl - Load included sample data into the DB
 populate_db.pl [--marcflavour MARCFLAVOUR]
 
  Options:
-   --help            Brief help message
-   --marcflavour m   Specify the MARC flavour to use (MARC21|UNIMARC). Defaults
+   --help                Brief help message
+   --marcflavour m       Specify the MARC flavour to use (MARC21|UNIMARC). Defaults
                                 to MARC21.
-   -v                Be verbose.
+   --opac-base-url o     Specify the OPAC's base URL.
+   --intranet-base-url o Specify the intranet's base URL.
+   -v                    Be verbose.
 
 =head1 OPTIONS
 
@@ -61,11 +63,15 @@ Make the output more verbose.
 my $help;
 my $verbose;
 my $marcflavour = 'MARC21';
+my $opac_base_url = 'catalogue.kohadev.vm';
+my $intranet_base_url = 'pro.kohadev.vm';
 
 GetOptions(
-    'help|?'        => \$help,
-    'verbose'       => \$verbose,
-    'marcflavour=s' => \$marcflavour
+    'help|?'              => \$help,
+    'verbose'             => \$verbose,
+    'marcflavour=s'       => \$marcflavour,
+    'opac-base-url=s'     => \$opac_base_url,
+    'intranet-base-url=s' => \$intranet_base_url
 ) or pod2usage;
 
 if ( $help ) {
@@ -112,7 +118,9 @@ my $version = get_version();
 
 initialize_data();
 #update_database();
-C4::Context->set_preference('staffClientBaseURL', 'pro.kohadev.vm');
+# Set staffClientBaseURL and OPACBaseURL
+C4::Context->set_preference( 'staffClientBaseURL', $intranet_base_url );
+C4::Context->set_preference( 'OPACBaseURL',        $opac_base_url );
 
 sub initialize_data {
     say "Inserting koha db structure..."
