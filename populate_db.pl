@@ -21,7 +21,7 @@ use Pod::Usage;
 use C4::Installer;
 use C4::Context;
 
-#use Koha::SearchEngine::Elasticsearch;
+use Koha::SearchEngine::Elasticsearch;
 
 =head1 NAME
 
@@ -121,6 +121,9 @@ initialize_data();
 # Set staffClientBaseURL and OPACBaseURL
 C4::Context->set_preference( 'staffClientBaseURL', $intranet_base_url );
 C4::Context->set_preference( 'OPACBaseURL',        $opac_base_url );
+
+# Initialize ES mappings
+Koha::SearchEngine::Elasticsearch->reset_elasticsearch_mappings;
 
 sub initialize_data {
     say "Inserting koha db structure..."
