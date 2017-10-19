@@ -25,14 +25,19 @@ my $userid;
 my $password;
 my $koha_dir;
 my $elasticsearch;
+my $opac_base_url;
+my $intranet_base_url;
 
 GetOptions(
-    'elasticsearch' => \$elasticsearch,
-    'instance=s' => \$instance,
-    'koha_dir=s' => \$koha_dir,
-    'password=s' => \$password,
-    'userid=s'   => \$userid
+    'elasticsearch'       => \$elasticsearch,
+    'instance=s'          => \$instance,
+    'intranet-base-url=s' => \$intranet_base_url,
+    'koha_dir=s'          => \$koha_dir,
+    'opac-base-url=s'     => \$opac_base_url,
+    'password=s'          => \$password,
+    'userid=s'            => \$userid
 );
+
 
 my $create_superlibrarian_opts = "";
 $create_superlibrarian_opts .= "--userid $userid "
@@ -41,14 +46,16 @@ $create_superlibrarian_opts .= "--password $password "
 	if defined $password;
 
 $instance //= 'kohadev';
-
 $koha_dir //= '/home/vagrant/kohaclone';
+$opac_base_url //= 'catalogue.kohadev.vm';
+$intranet_base_url //= 'pro.kohadev.vm';
+
 my $misc_dir = dirname( abs_path( $0 ) );
 
 my ( $cmd, $success, $error_code, $full_buf, $stdout_buf, $stderr_buf );
 my $PERL5LIB = $ENV{PERL5LIB};
 
-$cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v'";
+$cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v --opac-base-url $opac_base_url --intranet-base-url $intranet_base_url'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
 $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl $create_superlibrarian_opts'";
