@@ -21,7 +21,7 @@ use Pod::Usage;
 use C4::Installer;
 use C4::Context;
 
-#use Koha::SearchEngine::Elasticsearch;
+use Koha::SearchEngine::Elasticsearch;
 
 =head1 NAME
 
@@ -170,7 +170,7 @@ sub initialize_data {
     });
 
     # Initialize ES mappings
-    #Koha::SearchEngine::Elasticsearch->reset_elasticsearch_mappings;
+    Koha::SearchEngine::Elasticsearch->reset_elasticsearch_mappings;
 }
 
 sub execute_sqlfile {

@@ -23,11 +23,15 @@ use Getopt::Long;
 my $instance;
 my $userid;
 my $password;
+my $koha_dir;
+my $elasticsearch;
 
 GetOptions(
+    'elasticsearch' => \$elasticsearch,
     'instance=s' => \$instance,
-    'userid=s'   => \$userid,
-    'password=s' => \$password
+    'koha_dir=s' => \$koha_dir,
+    'password=s' => \$password,
+    'userid=s'   => \$userid
 );
 
 my $create_superlibrarian_opts = "";
@@ -38,6 +42,7 @@ $create_superlibrarian_opts .= "--password $password "
 
 $instance //= 'kohadev';
 
+$koha_dir //= '/home/vagrant/kohaclone';
 my $misc_dir = dirname( abs_path( $0 ) );
 
 my ( $cmd, $success, $error_code, $full_buf, $stdout_buf, $stderr_buf );
@@ -61,6 +66,11 @@ exit(1) unless $success;
 $cmd = "sudo koha-rebuild-zebra -f -v $instance";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
-# TODO Add rebuild ES
+
+if ($elasticsearch) {
+    $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $koha_dir/misc/search_tools/rebuild_elastic_search.pl -v'";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+}
 
 exit(0);
