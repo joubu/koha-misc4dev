@@ -32,8 +32,8 @@ GetOptions(
     'elasticsearch'       => \$elasticsearch,
     'instance=s'          => \$instance,
     'intranet-base-url=s' => \$intranet_base_url,
-    'koha_dir=s'          => \$koha_dir,
     'opac-base-url=s'     => \$opac_base_url,
+    'koha_dir=s'          => \$koha_dir,
     'password=s'          => \$password,
     'userid=s'            => \$userid
 );
@@ -50,6 +50,7 @@ $koha_dir //= '/home/vagrant/kohaclone';
 $opac_base_url //= 'catalogue.kohadev.vm';
 $intranet_base_url //= 'pro.kohadev.vm';
 
+$koha_dir //= '/home/vagrant/kohaclone';
 my $misc_dir = dirname( abs_path( $0 ) );
 
 my ( $cmd, $success, $error_code, $full_buf, $stdout_buf, $stderr_buf );
