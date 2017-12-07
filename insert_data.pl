@@ -81,6 +81,7 @@ insert_records();
 insert_default_circ_rule();
 configure_selfreg();
 configure_selfcheckout();
+configure_course_reserves();
 insert_acquisition_data() if $major_version > 318;
 
 sub execute_sqlfile {
@@ -162,6 +163,13 @@ sub configure_selfcheckout {
             INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
         |, undef, $borrowernumber, 1, 'self_checkout' );
     }
+}
+
+sub configure_course_reserves {
+    C4::Context->set_preference('UseCourseReserves', 1);
+    my $dbh = C4::Context->dbh;
+    $dbh->do(q|INSERT INTO authorised_values ( category, authorised_value, lib, lib_opac ) VALUES ('DEPARTMENT', 'Department1', 'Department 1', 'Department 1')|);
+    $dbh->do(q|INSERT INTO courses( department, course_number, course_name, enabled ) VALUES ('Department1', 1, 'first course', 'yes')|);
 }
 
 sub insert_acquisition_data {
