@@ -31,10 +31,37 @@ $koha_dir //= '/home/vagrant/kohaclone';
 $instance //= 'kohadev';
 
 if ( -f $koha_dir . '/debian/templates/plack.psgi' ) {
-    `sudo cp $koha_dir/debian/templates/plack.psgi /etc/koha/sites/$instance/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#$koha_dir# /etc/koha/sites/$instance/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/lib#$koha_dir# /etc/koha/sites/$instance/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#$koha_dir/opac# /etc/koha/sites/$instance/plack.psgi`;
+    my $psgi_filepath = qq|/etc/koha/sites/$instance/plack.psgi|;
+    `sudo cp $koha_dir/debian/templates/plack.psgi $psgi_filepath`;
+    `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#$koha_dir# $psgi_filepath`;
+    `sudo perl -p -i -e s#/usr/share/koha/lib#$koha_dir# $psgi_filepath`;
+    `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#$koha_dir/opac# $psgi_filepath`;
+    `sudo koha-plack --restart $instance`;
+    unless ( qx{git -C $koha_dir log --oneline | grep "Bug 18137: Migrate from Swagger2 to Mojolicious::Plugin::OpenAPI" } ) {
+        # This is a bit hacky, we want to comment the api line if 18137 is not applied
+        my $fh;
+        open($fh, '-|', 'sudo', 'cat', $psgi_filepath) or die "Unable to open pipe: $!\n";
+        my $inside_api_block;
+        my @lines;
+        while ( my $line = <$fh> ) {
+            chomp $line;
+            if ( $line =~ m|^my \$api| ) {
+                $inside_api_block = 1;
+            }
+            if ( $line =~ m|mount.*\$api| ) { # mount '/api/v1/app.pl' => $apiv1;
+                $line =~ s|^|#|; # Comment out the block
+            }
+            if ( $inside_api_block ) {
+                $inside_api_block = 0 if $line =~ m|^};|; # End of block
+                $line =~ s|^|#|; # Comment out the block
+            }
+            push @lines, $line;
+        }
+        close $fh;
+        open($fh, '|-', 'sudo', 'tee', $psgi_filepath) or die "Unable to open pipe: $!\n";
+        say $fh $_ for @lines;
+        close $fh;
+    }
     `sudo koha-plack --restart $instance`;
 }
 
