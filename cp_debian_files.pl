@@ -48,4 +48,8 @@ run( command => "sudo xsltproc --output /usr/share/man/man8/ /usr/share/xml/docb
 run( command => "sudo rm /usr/share/man/man8/koha-*.8.gz", verbose => 1 );
 run( command => "sudo gzip /usr/share/man/man8/koha-*.8", verbose => 1 );
 
+# Update *-git.conf apache files
+run( command => "sudo rm /etc/koha/apache-shared-opac-git.conf /etc/koha/apache-shared-intranet-git.conf" );
+run( command => "cd /home/vagrant/gitify; sudo ./koha-gitify kohadev $koha_dir" );
+
 exit(0);
