@@ -21,9 +21,11 @@ use Getopt::Long;
 use IPC::Cmd qw( run );
 
 my $koha_dir = '/home/vagrant/kohaclone';
+my $gitify_dir = '/home/vagrant/gitify';
 
 GetOptions(
-    'koha_dir=s' => \$koha_dir
+    'koha_dir=s' => \$koha_dir,
+    'gitify_dir=s' => \$gitify_dir,
 );
 
 my $koha_debian_dir = "$koha_dir/debian";
@@ -50,6 +52,6 @@ run( command => "sudo gzip /usr/share/man/man8/koha-*.8", verbose => 1 );
 
 # Update *-git.conf apache files
 run( command => "sudo rm /etc/koha/apache-shared-opac-git.conf /etc/koha/apache-shared-intranet-git.conf" );
-run( command => "cd /home/vagrant/gitify; sudo ./koha-gitify kohadev $koha_dir" );
+run( command => "cd $gitify_dir; sudo ./koha-gitify kohadev $koha_dir" );
 
 exit(0);
