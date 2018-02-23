@@ -46,6 +46,22 @@ while ( my $line = <$fh> ) {
 
 close $fh;
 
+my $system_files_mapping = {
+    'koha-common.bash-completion' => '/etc/bash_completion.d/koha-common',
+    'koha-common.cron.d'          => '/etc/cron.d/koha-common',
+    'koha-common.cron.daily'      => '/etc/cron.daily/koha-common',
+    'koha-common.cron.hourly'     => '/etc/cron.hourly/koha-common',
+    'koha-common.cron.monthly'    => '/etc/cron.monthly/koha-common',
+    'koha-common.default'         => '/etc/default/koha-common',
+    'koha-common.init'            => '/etc/init.d/koha-common',
+    'koha-common.logrotate'       => '/etc/logrotate.d/koha-common'
+};
+
+foreach my $debian_file ( keys %{ $system_files_mapping } ) {
+    my $cmd = "sudo cp $koha_dir/debian/$debian_file " . $system_files_mapping->{ $debian_file };
+    run( command => $cmd, verbose => 1 );
+}
+
 run( command => "sudo xsltproc --output /usr/share/man/man8/ /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $koha_debian_dir/docs/*.xml", verbose => 1 );
 run( command => "sudo rm /usr/share/man/man8/koha-*.8.gz", verbose => 1 );
 run( command => "sudo gzip /usr/share/man/man8/koha-*.8", verbose => 1 );
