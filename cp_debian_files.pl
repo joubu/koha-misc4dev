@@ -67,6 +67,7 @@ run( command => "sudo rm /usr/share/man/man8/koha-*.8.gz", verbose => 1 );
 run( command => "sudo gzip /usr/share/man/man8/koha-*.8", verbose => 1 );
 
 # Update *-git.conf apache files
+run( command => "sudo cp $koha_dir/debian/templates/apache-shared*.conf /etc/koha/" );
 run( command => "sudo rm /etc/koha/apache-shared-opac-git.conf /etc/koha/apache-shared-intranet-git.conf" );
 run( command => "cd $gitify_dir; sudo ./koha-gitify kohadev $koha_dir" );
 
