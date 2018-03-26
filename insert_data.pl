@@ -158,10 +158,14 @@ sub configure_selfcheckout {
     my $dbh = C4::Context->dbh;
     $dbh->do(q|INSERT INTO borrowers ( cardnumber, userid, password, surname, categorycode, branchcode, dateexpiry, flags ) VALUES ( 'self_checkout', 'self_checkout', ?, 'Self-checkout patron', 'S', 'CPL', 2099-12-31, 0 )|, undef, $password);
     my $borrowernumber = $dbh->last_insert_id(undef, undef, 'borrowers', undef);
-    if ( $VERSION >= "32100027" ) {
+    if ( $VERSION >= "32100027" and $VERSION < "171200024" ) {
         $dbh->do(q|
             INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
         |, undef, $borrowernumber, 1, 'self_checkout' );
+    } elsif ( $VERSION >= "171200024" ) {
+        $dbh->do(q|
+            INSERT INTO user_permissions (borrowernumber, module_bit, code) VALUES (?, ?, ?)
+        |, undef, $borrowernumber, 23, 'self_checkout_module' );
     }
 }
 
