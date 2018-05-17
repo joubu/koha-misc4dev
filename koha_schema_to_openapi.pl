@@ -29,7 +29,7 @@ use Template;
 
 =head1 NAME
 
-koha-misc4dev/koha_schema_to_openapi.pl
+koha_schema_to_openapi.pl
 
 Script that generates skeletal OpenAPI object definitions out of 
 DB schema for Koha.
@@ -52,15 +52,17 @@ DBIC schema. (mandatory)
 
 prints this help text
 
+=back
+
 =head1 CAVEATS
 
 =over 8
 
-=item B<--Descriptions>
+=item B<Descriptions>
 
 The generated output is missing descriptions for the attributes.
 
-=item B<--Booleans>
+=item B<Booleans>
 
 Boolean attributes need to be marked as booleans in the corresponding
 schema file before the command is run. Refer to the coding guidelines
