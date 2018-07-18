@@ -19,9 +19,9 @@ use Modern::Perl;
 use Getopt::Long;
 use Pod::Usage;
 
-use C4::Installer;
 use C4::Context;
-use C4::Members;
+
+use Koha::Patrons;
 
 my $dbh = C4::Context->dbh;
 my ( $branchcode )  = $dbh->selectrow_array(q|SELECT branchcode FROM branches LIMIT 1|);
@@ -48,15 +48,15 @@ GetOptions(
 
 pod2usage(1) if $help;
 
-AddMember(
+Koha::Patron->new({
     surname      => 'koha',
     userid       => $userid,
-    cardnumber   => 42,
+    cardnumber   => '42',
     branchcode   => $branchcode,
     categorycode => $categorycode,
     password     => $password,
     flags        => 1,
-);
+})->store;
 
 =head1 NAME
 
