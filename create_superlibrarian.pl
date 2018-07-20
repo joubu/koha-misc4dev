@@ -21,6 +21,7 @@ use Pod::Usage;
 
 use C4::Context;
 
+use Koha::AuthUtils;
 use Koha::Patrons;
 
 my $dbh = C4::Context->dbh;
@@ -48,15 +49,17 @@ GetOptions(
 
 pod2usage(1) if $help;
 
-Koha::Patron->new({
+my $patron = Koha::Patron->new({
     surname      => 'koha',
     userid       => $userid,
     cardnumber   => '42',
     branchcode   => $branchcode,
     categorycode => $categorycode,
-    password     => $password,
     flags        => 1,
 })->store;
+
+my $digest = Koha::AuthUtils::hash_password($password);
+$patron->update({password => $digest,});
 
 =head1 NAME
 
