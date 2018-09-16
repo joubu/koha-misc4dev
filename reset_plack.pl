@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -15,15 +17,25 @@
 
 use Modern::Perl;
 
-our $koha_root = q|/home/vagrant/kohaclone|;
-our $kohadev = q|kohadev|;
+use Getopt::Long;
 
-if ( -f $koha_root . '/debian/templates/plack.psgi' ) {
-    `sudo cp $koha_root/debian/templates/plack.psgi /etc/koha/sites/kohadev/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/lib#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#/home/vagrant/kohaclone/opac# /etc/koha/sites/kohadev/plack.psgi`;
-    `sudo koha-plack --restart $kohadev`;
+my $koha_dir;
+my $instance;
+
+GetOptions(
+    'instance=s' => \$instance,
+    'koha_dir=s' => \$koha_dir
+);
+
+$koha_dir //= '/home/vagrant/kohaclone';
+$instance //= 'kohadev';
+
+if ( -f $koha_dir . '/debian/templates/plack.psgi' ) {
+    `sudo cp $koha_dir/debian/templates/plack.psgi /etc/koha/sites/$instance/plack.psgi`;
+    `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#$koha_dir# /etc/koha/sites/$instance/plack.psgi`;
+    `sudo perl -p -i -e s#/usr/share/koha/lib#$koha_dir# /etc/koha/sites/$instance/plack.psgi`;
+    `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#$koha_dir/opac# /etc/koha/sites/$instance/plack.psgi`;
+    `sudo koha-plack --restart $instance`;
 }
 
 exit(0);
