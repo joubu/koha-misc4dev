@@ -25,12 +25,14 @@ my $userid;
 my $password;
 my $koha_dir;
 my $elasticsearch;
+my $gitify_dir;
 my $opac_base_url;
 my $intranet_base_url;
 my $marcflavour = 'MARC21';
 
 GetOptions(
     'elasticsearch'       => \$elasticsearch,
+    'gitify_dir=s'        => \$gitify_dir,
     'instance=s'          => \$instance,
     'intranet-base-url=s' => \$intranet_base_url,
     'koha_dir=s'          => \$koha_dir,
@@ -47,10 +49,11 @@ $create_superlibrarian_opts .= "--userid $userid "
 $create_superlibrarian_opts .= "--password $password "
 	if defined $password;
 
-$instance //= 'kohadev';
-$koha_dir //= '/home/vagrant/kohaclone';
-$opac_base_url //= 'catalogue.kohadev.vm';
+$instance          //= 'kohadev';
+$koha_dir          //= '/home/vagrant/kohaclone';
+$opac_base_url     //= 'catalogue.kohadev.vm';
 $intranet_base_url //= 'pro.kohadev.vm';
+$gitify_dir        //= '/home/vagrant/gitify';
 
 $marcflavour = uc($marcflavour);
 
@@ -70,10 +73,10 @@ exit(1) unless $success;
 $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl $create_superlibrarian_opts'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
-$cmd = "sudo koha-shell $instance -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl'";
+$cmd = "sudo koha-shell $instance -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl --marcflavour $marcflavour'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
-$cmd = "sudo perl $misc_dir/cp_debian_files.pl --instance=$instance";
+$cmd = "sudo perl $misc_dir/cp_debian_files.pl --instance=$instance --koha_dir=$koha_dir --gitify_dir=$gitify_dir";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
 $cmd = "PERL5LIB=$PERL5LIB perl $misc_dir/reset_plack.pl";
