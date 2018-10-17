@@ -156,7 +156,7 @@ sub configure_selfcheckout {
     my $password = hash_password('self_checkout');
 
     my $dbh = C4::Context->dbh;
-    $dbh->do(q|INSERT INTO borrowers ( cardnumber, userid, password, surname, categorycode, branchcode, dateexpiry, flags ) VALUES ( 'self_checkout', 'self_checkout', ?, 'Self-checkout patron', 'S', 'CPL', 2099-12-31, 0 )|, undef, $password);
+    $dbh->do(q|INSERT INTO borrowers ( cardnumber, userid, password, surname, categorycode, branchcode, dateexpiry, flags ) VALUES ( 'self_checkout', 'self_checkout', ?, 'Self-checkout patron', 'S', 'CPL', '2099-12-31', 0 )|, undef, $password);
     my $borrowernumber = $dbh->last_insert_id(undef, undef, 'borrowers', undef);
     if ( $VERSION >= "32100027" and $VERSION < "171200024" ) {
         $dbh->do(q|
