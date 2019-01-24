@@ -91,6 +91,7 @@ insert_default_circ_rule();
 configure_selfreg();
 configure_selfcheckout();
 configure_course_reserves();
+configure_plugins();
 insert_acquisition_data() if $major_version > 318;
 
 sub execute_sqlfile {
@@ -142,6 +143,10 @@ sub insert_default_circ_rule {
     | . ( $VERSION >= '160600037' ? ', "yes" ' : '' ) . q|
     )|
     );
+}
+
+sub configure_plugins {
+    C4::Context->set_preference( 'UseKohaPlugins', 1 );
 }
 
 sub configure_selfreg {
