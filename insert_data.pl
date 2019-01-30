@@ -57,7 +57,18 @@ my $major_version = join '', ( ( $VERSION =~ m|^3| ) ? ( split //, $VERSION )[0.
 my $sql_files_dir = "$sql_dir/$lc_marcflavour/$major_version";
 my $version_data_directory = $major_version;
 our @records_files;
-my $has_biblio_metadata = 0;
+my $has_biblio_metadata = ($VERSION >= "161200004") ? 1 : 0;
+
+if ( -d $sql_files_dir ) {
+    if ( $version_data_directory eq 1812 and
+         $VERSION >= "181200011" ) {
+        $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory/after_22155"; 
+    }
+    else {
+        $version_data_directory--;
+    }
+}
+
 while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
     $version_data_directory--;
 
@@ -66,13 +77,11 @@ while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
         if ( $version_data_directory == 1611 ) {
             if ( $VERSION >= "161200004" ) { # After 17196 removing of biblioitems.marcxml
                 $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory/after_17196";
-                $has_biblio_metadata = 1;
             }
-        } else {
-            $has_biblio_metadata = 1;
         }
     }
 }
+
 @records_files = ( "$sql_files_dir/biblio.sql", "$sql_files_dir/biblioitems.sql", "$sql_files_dir/items.sql", "$sql_files_dir/auth_header.sql" );
 push @records_files, "$sql_files_dir/biblio_metadata.sql" if $has_biblio_metadata;
 
