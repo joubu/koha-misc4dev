@@ -126,43 +126,34 @@ sub insert_default_circ_rule {
         );
         $sth->execute('maxissueqty', 5);
         $sth->execute('maxonsiteissueqty', 5);
-        $sth->execute('issuelength', 5);
-        $sth->execute('lengthunit', 'days');
-        $sth->execute('renewalperiod', 5);
-        $sth->execute('reservesallowed', 5);
-        $sth->execute('holds_per_record', 2);
-        $sth->execute('onshelfholds', 1);
-        $sth->execute('opacitemholds', 'Y');
-        $sth->execute('article_requests', 'yes');
-    } else {
-        $dbh->do(
-            q|INSERT INTO issuingrules (
-            categorycode, itemtype, branchcode,
-            maxissueqty
-        | . ( $VERSION >= '32100035' ? ', maxonsiteissueqty' : '' ) . q|
-            , issuelength
-            , lengthunit
-            , renewalperiod
-            , reservesallowed
-        | . ( $VERSION >= '160600018' ? ', holds_per_record' : '' ) . q|
-        | . ( $VERSION >= '31900017'  ? ', onshelfholds'     : '' ) . q|
-        | . ( $VERSION >= '31900017'  ? ', opacitemholds'    : '' ) . q|
-        | . ( $VERSION >= '160600037' ? ', article_requests' : '' ) . q|
-        ) VALUES (
-            '*', '*', '*',
-            5
-        | . ( $VERSION >= '32100035' ? ', 5' : '' ) . q|
-            , 5
-            , 'days'
-            , 5
-            , 5
-        | . ( $VERSION >= '160600018' ? ', 2 '     : '' ) . q|
-        | . ( $VERSION >= '31900017'  ? ', 1 '     : '' ) . q|
-        | . ( $VERSION >= '31900017'  ? ', "Y" '   : '' ) . q|
-        | . ( $VERSION >= '160600037' ? ', "yes" ' : '' ) . q|
-        )|
-        );
     }
+    $dbh->do(
+        q|INSERT INTO issuingrules (
+        categorycode, itemtype, branchcode
+    | . ( $VERSION < '181200020' ? ', maxissueqty' : '' ) . q|
+    | . ( $VERSION >= '32100035' && $VERSION < '181200020' ? ', maxonsiteissueqty' : '' ) . q|
+        , issuelength
+        , lengthunit
+        , renewalperiod
+        , reservesallowed
+    | . ( $VERSION >= '160600018' ? ', holds_per_record' : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', onshelfholds'     : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', opacitemholds'    : '' ) . q|
+    | . ( $VERSION >= '160600037' ? ', article_requests' : '' ) . q|
+    ) VALUES (
+        '*', '*', '*'
+    | . ( $VERSION < '181200020' ? ', 5' : '' ) . q|
+    | . ( $VERSION >= '32100035' && $VERSION < '181200020' ? ', 5' : '' ) . q|
+        , 5
+        , 'days'
+        , 5
+        , 5
+    | . ( $VERSION >= '160600018' ? ', 2 '     : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', 1 '     : '' ) . q|
+    | . ( $VERSION >= '31900017'  ? ', "Y" '   : '' ) . q|
+    | . ( $VERSION >= '160600037' ? ', "yes" ' : '' ) . q|
+    )|
+    );
 }
 
 sub configure_plugins {
