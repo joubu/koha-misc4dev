@@ -90,7 +90,11 @@ $cmd = "sudo koha-rebuild-zebra -f -v $instance";
 exit(1) unless $success;
 
 if ($elasticsearch) {
-    $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $koha_dir/misc/search_tools/rebuild_elastic_search.pl -v'";
+    my $rebuild_es_path =
+      -e "$koha_dir/misc/search_tools/rebuild_elastic_search.pl"
+       ? "$koha_dir/misc/search_tools/rebuild_elastic_search.pl"
+       : "$koha_dir/misc/search_tools/rebuild_elasticsearch.pl"; # See "Bug 21872: Fix name of rebuild_elasticsearch.pl"
+    $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $rebuild_es_path -v'";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 }
