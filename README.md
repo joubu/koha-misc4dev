@@ -78,7 +78,7 @@ The _plack files are only generated if the `debian/templates/koha.psgi` file exi
 
 That will produce 2 sections, the "Raw data" (not really useful) and the "Average".
 
-You can have a look at my own generated file in the `benchmark_data` directory
+You can have a look at my own generated file in the `benchmark_data` directory.
 
 #### Generate a graph
 
