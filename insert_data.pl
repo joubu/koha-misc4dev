@@ -59,18 +59,8 @@ my $version_data_directory = $major_version;
 our @records_files;
 my $has_biblio_metadata = ($VERSION >= "161200004") ? 1 : 0;
 
-if ( -d $sql_files_dir ) {
-    if ( $version_data_directory eq 1812 and
-         $VERSION >= "181200011" ) {
-        $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory/after_22155"; 
-    }
-    else {
-        $version_data_directory--;
-    }
-}
-
 while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
-    $version_data_directory--;
+    $version_data_directory = decrement_version($version_data_directory);
 
     $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory";
     if ( $version_data_directory >= 1611 ) {
@@ -80,9 +70,14 @@ while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
             }
         }
     }
+    if ( $version_data_directory eq 1812 and
+         $VERSION >= "181200011" ) {
+        $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory/after_22155";
+    }
 }
 
 @records_files = ( "$sql_files_dir/biblio.sql", "$sql_files_dir/biblioitems.sql", "$sql_files_dir/items.sql", "$sql_files_dir/auth_header.sql" );
+use Data::Dumper;warn Dumper \@records_files;
 push @records_files, "$sql_files_dir/biblio_metadata.sql" if $has_biblio_metadata;
 
 C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382df - 16520
@@ -278,6 +273,18 @@ sub get_version {
     }
     $version =~ s|\.||g;
     return $version;
+}
+
+sub decrement_version {
+    my ( $version ) = @_;
+    my ( $major, $minor );
+    if ( $version =~ m|^(\d{2})(\d{2})$| ) {
+        ( $major, $minor ) = ($1,$2);
+    }
+    return sprintf("%s%s", $major,   '11') if $minor eq '12'; # Return 18.11 if 18.12
+    return sprintf("%s%s", $major,   '06') if $minor eq '11'; # Return 18.06 if 18.11
+    return sprintf("%s%s", $major,   '05') if $minor eq '06'; # Return 18.05 if 18.06
+    return sprintf("%s%s", $major-1, '12') if $minor eq '05'; # Return 17.12 if 18.05
 }
 
 =head1 SYNOPSIS
