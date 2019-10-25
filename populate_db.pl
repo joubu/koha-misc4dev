@@ -109,6 +109,8 @@ my @sample_files_mandatory = (
     "$data_dir/userflags.sql",
     "$data_dir/userpermissions.sql",
     "$data_dir/account_offset_types.sql",
+    "$data_dir/account_credit_types.sql",
+    "$data_dir/account_debit_types.sql",
 );
 my @sample_lang_files_mandatory    = ( glob $root . "/installer/data/mysql/$lang/mandatory/*.sql" );
 my @sample_lang_files_optional     = ( glob $root . "/installer/data/mysql/$lang/optional/*.sql" );
