@@ -1,0 +1,4 @@
+-- UPDATE systempreferences SET value="" WHERE variable = 'RequireStrongPassword';
+-- UPDATE systempreferences SET value="1" WHERE variable = 'EnableAdvancedCatalogingEditor';
+-- UPDATE systempreferences SET value="production" WHERE variable = 'finesMode';
+-- UPDATE itemtypes SET rentalcharge="0";

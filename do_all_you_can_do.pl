@@ -55,6 +55,8 @@ $opac_base_url     //= 'catalogue.kohadev.vm';
 $intranet_base_url //= 'pro.kohadev.vm';
 $gitify_dir        //= '/home/vagrant/gitify';
 
+my $shared_dir = "$koha_dir/shared";
+
 $marcflavour = uc($marcflavour);
 
 if (     $marcflavour ne 'MARC21'
@@ -76,6 +78,13 @@ exit(1) unless $success;
 $cmd = "sudo koha-shell $instance -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl --marcflavour $marcflavour'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+if ( -f "$shared_dir/custom.sql" ) {
+    $cmd = "sudo koha-mysql $instance < $shared_dir/custom.sql";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+} else {
+    say "There is no custom.sql ($shared_dir/custom.sql) file, skipping."
+}
 $cmd = "sudo perl $misc_dir/cp_debian_files.pl --instance=$instance --koha_dir=$koha_dir --gitify_dir=$gitify_dir";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
