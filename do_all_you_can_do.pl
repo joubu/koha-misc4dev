@@ -88,6 +88,9 @@ if ( -f "$shared_dir/custom.sql" ) {
 $cmd = "sudo perl $misc_dir/cp_debian_files.pl --instance=$instance --koha_dir=$koha_dir --gitify_dir=$gitify_dir";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+$cmd = "PERL5LIB=$PERL5LIB perl $misc_dir/setup_sip.pl --instance=$instance";
+( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+exit(1) unless $success;
 $cmd = "PERL5LIB=$PERL5LIB perl $misc_dir/reset_plack.pl --koha_dir=$koha_dir --instance=$instance";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
