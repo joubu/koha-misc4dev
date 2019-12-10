@@ -59,7 +59,10 @@ my $patron = Koha::Patron->new({
 })->store;
 
 my $digest = Koha::AuthUtils::hash_password($password);
-$patron->update({password => $digest,});
+# We must not call Koha::Patron->store here
+# Ideally we should use Koha::Patron->set_password, but it does not exist for all versions
+$patron->password($digest);
+$patron->_result->update_or_insert;
 
 =head1 NAME
 
