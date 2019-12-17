@@ -46,7 +46,7 @@ Koha::Patron->new({
     categorycode => 'S',
     branchcode   => 'CPL',
     flags        => 2,
-})->store->update({password =>Koha::AuthUtils::hash_password('$password')});
+})->store->password(Koha::AuthUtils::hash_password('$password'))->_result->update_or_insert;
 EOF
 
 $perl_code =~ s|\s+| |g;
