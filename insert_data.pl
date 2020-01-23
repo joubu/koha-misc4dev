@@ -111,44 +111,108 @@ sub insert_default_circ_rule {
     say "Inserting default circ rule..."
         if $verbose;
     my $dbh = C4::Context->dbh;
-    if ( $VERSION >= '181200020' ) {
-        my $sth = $dbh->prepare (
-            q|INSERT INTO circulation_rules (
-                categorycode, itemtype, branchcode, rule_name, rule_value
-            ) VALUES (
-                NULL, NULL, NULL, ?, ?
-            )|
+    if ( $VERSION >= '19.12.00.018' ) { # After 18936 - issuingrules vs circulation_rules
+        require Koha::CirculationRules;
+        my $params = {
+            branchcode      => undef,
+            categorycode    => undef,
+            itemtype        => undef,
+            rules => {
+                renewalsallowed                  => 5,
+                renewalperiod                    => 5,
+                issuelength                      => 5,
+                lengthunit                       => 'days',
+                onshelfholds                     => 1,
+                article_requests                 => "yes",
+                auto_renew                       => 0,
+                cap_fine_to_replacement_price    => 0,
+                chargeperiod                     => undef,
+                chargeperiod_charge_at           => 0,
+                fine                             => 0,
+                finedays                         => 0,
+                firstremind                      => 0,
+                hardduedate                      => "",
+                hardduedatecompare               => -1,
+                holds_per_day                    => undef,
+                holds_per_record                 => 2,
+                maxissueqty                      => 5,
+                maxonsiteissueqty                => 5,
+                maxsuspensiondays                => "",
+                no_auto_renewal_after            => "",
+                no_auto_renewal_after_hard_limit => "",
+                norenewalbefore                  => "",
+                opacitemholds                    => "Y",
+                overduefinescap                  => "",
+                rentaldiscount                   => 0,
+                suspension_chargeperiod          => undef,
+              }
+        };
+
+        my $params_2 = {
+            branchcode   => undef,
+            categorycode => undef,
+            rules        => {
+                patron_maxissueqty       => "",
+                patron_maxonsiteissueqty => "",
+                max_holds                => "",
+            }
+        };
+
+        my $params_3 = {
+            branchcode => undef,
+            itemtype   => undef,
+            rules      => {
+                holdallowed             => undef,
+                hold_fulfillment_policy => undef,
+                returnbranch            => undef,
+            }
+        };
+
+        eval {
+            Koha::CirculationRules->set_rules($params);
+            Koha::CirculationRules->set_rules($params_2);
+            Koha::CirculationRules->set_rules($params_3);
+        };
+    } else {
+        if ( $VERSION >= '181200020' ) {
+            my $sth = $dbh->prepare (
+                q|INSERT INTO circulation_rules (
+                    categorycode, itemtype, branchcode, rule_name, rule_value
+                ) VALUES (
+                    NULL, NULL, NULL, ?, ?
+                )|
+            );
+            $sth->execute('maxissueqty', 5);
+            $sth->execute('maxonsiteissueqty', 5);
+        }
+        $dbh->do(
+            q|INSERT INTO issuingrules (
+            categorycode, itemtype, branchcode
+        | . ( $VERSION < '181200020' ? ', maxissueqty' : '' ) . q|
+        | . ( $VERSION >= '32100035' && $VERSION < '181200020' ? ', maxonsiteissueqty' : '' ) . q|
+            , issuelength
+            , lengthunit
+            , renewalperiod
+            , reservesallowed
+        | . ( $VERSION >= '160600018' ? ', holds_per_record' : '' ) . q|
+        | . ( $VERSION >= '31900017'  ? ', onshelfholds'     : '' ) . q|
+        | . ( $VERSION >= '31900017'  ? ', opacitemholds'    : '' ) . q|
+        | . ( $VERSION >= '160600037' ? ', article_requests' : '' ) . q|
+        ) VALUES (
+            '*', '*', '*'
+        | . ( $VERSION < '181200020' ? ', 5' : '' ) . q|
+        | . ( $VERSION >= '32100035' && $VERSION < '181200020' ? ', 5' : '' ) . q|
+            , 5
+            , 'days'
+            , 5
+            , 5
+        | . ( $VERSION >= '160600018' ? ', 2 '     : '' ) . q|
+        | . ( $VERSION >= '31900017'  ? ', 1 '     : '' ) . q|
+        | . ( $VERSION >= '31900017'  ? ', "Y" '   : '' ) . q|
+        | . ( $VERSION >= '160600037' ? ', "yes" ' : '' ) . q|
+        )|
         );
-        $sth->execute('maxissueqty', 5);
-        $sth->execute('maxonsiteissueqty', 5);
     }
-    $dbh->do(
-        q|INSERT INTO issuingrules (
-        categorycode, itemtype, branchcode
-    | . ( $VERSION < '181200020' ? ', maxissueqty' : '' ) . q|
-    | . ( $VERSION >= '32100035' && $VERSION < '181200020' ? ', maxonsiteissueqty' : '' ) . q|
-        , issuelength
-        , lengthunit
-        , renewalperiod
-        , reservesallowed
-    | . ( $VERSION >= '160600018' ? ', holds_per_record' : '' ) . q|
-    | . ( $VERSION >= '31900017'  ? ', onshelfholds'     : '' ) . q|
-    | . ( $VERSION >= '31900017'  ? ', opacitemholds'    : '' ) . q|
-    | . ( $VERSION >= '160600037' ? ', article_requests' : '' ) . q|
-    ) VALUES (
-        '*', '*', '*'
-    | . ( $VERSION < '181200020' ? ', 5' : '' ) . q|
-    | . ( $VERSION >= '32100035' && $VERSION < '181200020' ? ', 5' : '' ) . q|
-        , 5
-        , 'days'
-        , 5
-        , 5
-    | . ( $VERSION >= '160600018' ? ', 2 '     : '' ) . q|
-    | . ( $VERSION >= '31900017'  ? ', 1 '     : '' ) . q|
-    | . ( $VERSION >= '31900017'  ? ', "Y" '   : '' ) . q|
-    | . ( $VERSION >= '160600037' ? ', "yes" ' : '' ) . q|
-    )|
-    );
 }
 
 sub configure_plugins {
