@@ -133,7 +133,7 @@ sub insert_default_circ_rule {
                 firstremind                      => 0,
                 hardduedate                      => "",
                 hardduedatecompare               => -1,
-                holds_per_day                    => undef,
+                holds_per_day                    => "",
                 holds_per_record                 => 2,
                 maxissueqty                      => 5,
                 maxonsiteissueqty                => 5,
@@ -145,6 +145,7 @@ sub insert_default_circ_rule {
                 overduefinescap                  => "",
                 rentaldiscount                   => 0,
                 suspension_chargeperiod          => undef,
+                reservesallowed                  => "",
               }
         };
 
@@ -168,11 +169,9 @@ sub insert_default_circ_rule {
             }
         };
 
-        eval {
-            Koha::CirculationRules->set_rules($params);
-            Koha::CirculationRules->set_rules($params_2);
-            Koha::CirculationRules->set_rules($params_3);
-        };
+        Koha::CirculationRules->set_rules($params);
+        Koha::CirculationRules->set_rules($params_2);
+        Koha::CirculationRules->set_rules($params_3);
     } else {
         if ( $VERSION >= '181200020' ) {
             my $sth = $dbh->prepare (
