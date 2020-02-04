@@ -111,7 +111,7 @@ sub insert_default_circ_rule {
     say "Inserting default circ rule..."
         if $verbose;
     my $dbh = C4::Context->dbh;
-    if ( $VERSION >= '19.12.00.018' ) { # After 18936 - issuingrules vs circulation_rules
+    if ( $VERSION >= '191200018' ) { # After 18936 - issuingrules vs circulation_rules
         require Koha::CirculationRules;
         my $params = {
             branchcode      => undef,
