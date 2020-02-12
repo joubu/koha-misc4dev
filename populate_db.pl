@@ -104,6 +104,7 @@ my $lang                = 'en';
 my $koha_structure_file = "$data_dir/kohastructure.sql";
 my @sample_files_mandatory = (
     glob("$data_dir/mandatory/*.sql"),
+    glob("$data_dir/mandatory/*.yml"),
     "$data_dir/audio_alerts.sql",
     "$data_dir/sysprefs.sql",
     "$data_dir/userflags.sql",
@@ -112,10 +113,10 @@ my @sample_files_mandatory = (
     "$data_dir/account_credit_types.sql",
     "$data_dir/account_debit_types.sql",
 );
-my @sample_lang_files_mandatory    = ( glob $root . "/installer/data/mysql/$lang/mandatory/*.sql" );
-my @sample_lang_files_optional     = ( glob $root . "/installer/data/mysql/$lang/optional/*.sql" );
-my @marc21_sample_files_mandatory  = ( glob $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql" );
-my @unimarc_sample_files_mandatory = ( glob $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.sql" );
+my @sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
+my @sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
+my @marc21_sample_files_mandatory  = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.yml" ) );
+my @unimarc_sample_files_mandatory = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.yml" ) );
 
 my $version = get_version();
 
@@ -178,8 +179,12 @@ sub initialize_data {
 sub execute_sqlfile {
     my ($filepath) = @_;
     unless ( -f $filepath ) {
-        say "Skipping $filepath" if $verbose;
-        return;
+        ( my $yml_filepath = $filepath ) =~ s|\.sql$|.yml|;
+        unless ( -f $yml_filepath ) {
+            say "Skipping $filepath" if $verbose;
+            return;
+        }
+        $filepath = $yml_filepath;
     }
     say "Inserting $filepath..."
         if $verbose;
