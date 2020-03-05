@@ -46,10 +46,6 @@ if (     $marcflavour ne 'MARC21'
     pod2usage;
 }
 
-if ( $marcflavour eq 'UNIMARC' ) {
-    warn "There is no records data for UNIMARC yet"
-}
-
 our $root      = C4::Context->config('intranetdir');
 our $installer = C4::Installer->new;
 my $sql_dir = dirname( abs_path($0) ) . '/data/sql';
@@ -77,8 +73,8 @@ while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
 }
 
 @records_files = ( "$sql_files_dir/biblio.sql", "$sql_files_dir/biblioitems.sql", "$sql_files_dir/items.sql", "$sql_files_dir/auth_header.sql" );
-use Data::Dumper;warn Dumper \@records_files;
 push @records_files, "$sql_files_dir/biblio_metadata.sql" if $has_biblio_metadata;
+use Data::Dumper;warn Dumper \@records_files;
 
 C4::Context->preference('VOID'); # FIXME master is broken because of 174769e382df - 16520
 insert_records();
@@ -88,6 +84,7 @@ configure_selfcheckout();
 configure_course_reserves();
 configure_plugins();
 insert_acquisition_data() if $major_version > 318;
+configure_lang();
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -239,7 +236,9 @@ sub configure_selfcheckout {
     my $password = hash_password('self_checkout');
 
     my $dbh = C4::Context->dbh;
-    $dbh->do(q|INSERT INTO borrowers ( cardnumber, userid, password, surname, categorycode, branchcode, dateexpiry, flags ) VALUES ( 'self_checkout', 'self_checkout', ?, 'Self-checkout patron', 'S', 'CPL', '2099-12-31', 0 )|, undef, $password);
+    my ( $branchcode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT branchcode FROM branches WHERE branchcode="CPL"), "CPL", ( SELECT branchcode FROM branches LIMIT 1 ) )|);
+    my ( $categorycode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT categorycode FROM categories WHERE categorycode="S"), "S", ( SELECT categorycode FROM categories LIMIT 1 ) )|);
+    $dbh->do(q|INSERT INTO borrowers ( cardnumber, userid, password, surname, categorycode, branchcode, dateexpiry, flags ) VALUES ( 'self_checkout', 'self_checkout', ?, 'Self-checkout patron', ?, ?, '2099-12-31', 0 )|, undef, $password, $categorycode, $branchcode);
     my $borrowernumber = $dbh->last_insert_id(undef, undef, 'borrowers', undef);
     if ( $VERSION >= "32100027" and $VERSION < "171200024" ) {
         $dbh->do(q|
@@ -269,6 +268,8 @@ sub insert_acquisition_data {
   budget_period_description => 'Main budget',
         budget_period_total => 1000000,
     }});
+    my $dbh = C4::Context->dbh;
+    my ( $branchcode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT branchcode FROM branches WHERE branchcode="CPL"), "CPL", ( SELECT branchcode FROM branches LIMIT 1 ) )|);
 
     my $fund_1 = $builder->build({ source => 'Aqbudget', value => {
            budget_parent_id => undef,
@@ -314,8 +315,8 @@ sub insert_acquisition_data {
              booksellernote => 'A vendor note',
                booksellerid => $vendor->{id},
                authorisedby => 51,
-              deliveryplace => 'CPL',
-               billingplace => 'CPL',
+              deliveryplace => $branchcode,
+               billingplace => $branchcode,
                   closedate => undef, # Need the undefs otherwise TestBuilder will create the FK with random data
                      branch => undef,
              contractnumber => undef,
@@ -348,6 +349,11 @@ sub decrement_version {
     return sprintf("%s%s", $major,   '06') if $minor eq '11'; # Return 18.06 if 18.11
     return sprintf("%s%s", $major,   '05') if $minor eq '06'; # Return 18.05 if 18.06
     return sprintf("%s%s", $major-1, '12') if $minor eq '05'; # Return 17.12 if 18.05
+}
+
+sub configure_lang {
+    C4::Context->set_preference( 'language', 'en' );
+    C4::Context->set_preference( 'opaclanguages', 'en' );
 }
 
 =head1 SYNOPSIS

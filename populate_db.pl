@@ -100,7 +100,7 @@ $ENV{KOHA_DB_DO_NOT_RAISE_OR_PRINT_ERROR} = 0;
 our $root      = C4::Context->config('intranetdir');
 our $data_dir  = "$root/installer/data/mysql";
 our $installer = C4::Installer->new;
-my $lang                = 'en';
+my $lang = $marcflavour eq 'UNIMARC' ? 'fr-FR' : 'en';
 my $koha_structure_file = "$data_dir/kohastructure.sql";
 my @sample_files_mandatory = (
     glob("$data_dir/mandatory/*.sql"),
@@ -113,10 +113,21 @@ my @sample_files_mandatory = (
     "$data_dir/account_credit_types.sql",
     "$data_dir/account_debit_types.sql",
 );
-my @sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
-my @sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
-my @marc21_sample_files_mandatory  = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.yml" ) );
-my @unimarc_sample_files_mandatory = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.yml" ) );
+my @marc21_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
+my @marc21_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
+
+my @unimarc_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.yml" ) );
+my @unimarc_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.yml" ),
+                                               glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.ymL" ),
+                                             );
+
+my @sample_lang_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_mandatory : @marc21_sample_lang_files_mandatory;
+my @sample_lang_files_optional = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_optional : @marc21_sample_lang_files_optional;
+
+my @marc21_marc_sample_files_mandatory  = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.yml" ) );
+my @unimarc_marc_sample_files_mandatory = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc_complet/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc_complet/*/*.yml" ) );
+
+my @marc_sample_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_marc_sample_files_mandatory : @marc21_marc_sample_files_mandatory;
 
 my $version = get_version();
 
@@ -144,17 +155,11 @@ sub initialize_data {
         execute_sqlfile($f);
     }
 
-    if ( $marcflavour eq 'UNIMARC' ) {
-        for my $f (@unimarc_sample_files_mandatory) {
-            execute_sqlfile($f);
-        }
-    } else {
-        for my $f (@marc21_sample_files_mandatory) {
-            execute_sqlfile($f);
-        }
+    for my $f (@marc_sample_files_mandatory) {
+        execute_sqlfile($f);
     }
 
-    # set marcflavour (MARC21)
+    # set marcflavour
     my $dbh = C4::Context->dbh;
 
     say "Setting the MARC flavour on the sysprefs..."

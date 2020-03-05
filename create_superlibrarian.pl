@@ -25,8 +25,8 @@ use Koha::AuthUtils;
 use Koha::Patrons;
 
 my $dbh = C4::Context->dbh;
-my ( $branchcode )  = $dbh->selectrow_array(q|SELECT branchcode FROM branches LIMIT 1|);
-my ( $categorycode ) = $dbh->selectrow_array(q|SELECT categorycode FROM categories LIMIT 1|);
+my ( $branchcode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT branchcode FROM branches WHERE branchcode="CPL"), "CPL", ( SELECT branchcode FROM branches LIMIT 1 ) )|);
+my ( $categorycode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT categorycode FROM categories WHERE categorycode="S"), "S", ( SELECT categorycode FROM categories LIMIT 1 ) )|);
 
 die
 "Not enough data in the database, library and/or patron category does not exist"
