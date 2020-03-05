@@ -36,6 +36,10 @@ my ($userid, $password) = ('term1', 'term1');
 my $cmd = "sudo cp /etc/koha/SIPconfig.xml /etc/koha/sites/$instance/SIPconfig.xml";
 run( command => $cmd, verbose => 1 );
 
+my $dbh = C4::Context->dbh;
+my ( $branchcode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT branchcode FROM branches WHERE branchcode="CPL"), "CPL", ( SELECT branchcode FROM branches LIMIT 1 ) )|);
+my ( $categorycode )  = $dbh->selectrow_array(q|SELECT IF( EXISTS( SELECT categorycode FROM categories WHERE categorycode="S"), "S", ( SELECT categorycode FROM categories LIMIT 1 ) )|);
+
 # Create a sip user term1/term1 with circulate permissions
 my $perl_code = <<EOF;
 exit(1) if Koha::Patrons->find({ userid => '$userid' });
@@ -43,8 +47,8 @@ Koha::Patron->new({
     surname      => 'koha_sip',
     cardnumber   => 'koha_sip',
     userid       => '$userid',
-    categorycode => 'S',
-    branchcode   => 'CPL',
+    categorycode => '$categorycode',
+    branchcode   => '$branchcode',
     flags        => 2,
 })->store->password(Koha::AuthUtils::hash_password('$password'))->_result->update_or_insert;
 EOF
