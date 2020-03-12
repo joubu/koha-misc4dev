@@ -117,8 +117,9 @@ my @marc21_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mys
 my @marc21_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
 
 my @unimarc_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.yml" ) );
-my @unimarc_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.yml" ) ),
-                                             ( glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.yml" ) );
+my @unimarc_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.yml" ),
+                                               glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.ymL" ),
+                                             );
 
 my @sample_lang_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_mandatory : @marc21_sample_lang_files_mandatory;
 my @sample_lang_files_optional = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_optional : @marc21_sample_lang_files_optional;

@@ -84,6 +84,7 @@ configure_selfcheckout();
 configure_course_reserves();
 configure_plugins();
 insert_acquisition_data() if $major_version > 318;
+configure_lang();
 
 sub execute_sqlfile {
     my ($filepath) = @_;
@@ -348,6 +349,11 @@ sub decrement_version {
     return sprintf("%s%s", $major,   '06') if $minor eq '11'; # Return 18.06 if 18.11
     return sprintf("%s%s", $major,   '05') if $minor eq '06'; # Return 18.05 if 18.06
     return sprintf("%s%s", $major-1, '12') if $minor eq '05'; # Return 17.12 if 18.05
+}
+
+sub configure_lang {
+    C4::Context->set_preference( 'language', 'en' );
+    C4::Context->set_preference( 'opaclanguages', 'en' );
 }
 
 =head1 SYNOPSIS
