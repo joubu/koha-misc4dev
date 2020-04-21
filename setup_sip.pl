@@ -58,6 +58,7 @@ $cmd = sprintf(q{sudo koha-shell %s -p -c 'PERL5LIB=%s perl -MKoha::Patrons -le 
 run( command => $cmd, verbose => 1 );
 
 run( command => "sudo koha-sip --stop $instance", verbose => 1 );
+run( command => "sudo koha-sip --enable $instance", verbose => 1 );
 run( command => "sudo koha-sip --start $instance", verbose => 1 );
 exit(0);
 
