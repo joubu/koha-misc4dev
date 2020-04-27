@@ -73,4 +73,6 @@ run( command => "sudo cp $koha_dir/debian/templates/apache-shared*.conf /etc/koh
 run( command => "sudo rm /etc/koha/apache-shared-opac-git.conf /etc/koha/apache-shared-intranet-git.conf" );
 run( command => "cd $gitify_dir; sudo ./koha-gitify $instance $koha_dir" );
 
+run( command => "sudo chown -R $instance-koha:$instance-koha /etc/koha/sites/$instance" );
+
 exit(0);
