@@ -146,29 +146,8 @@ sub insert_default_circ_rule {
               }
         };
 
-        my $params_2 = {
-            branchcode   => undef,
-            categorycode => undef,
-            rules        => {
-                patron_maxissueqty       => "",
-                patron_maxonsiteissueqty => "",
-                max_holds                => "",
-            }
-        };
-
-        my $params_3 = {
-            branchcode => undef,
-            itemtype   => undef,
-            rules      => {
-                holdallowed             => undef,
-                hold_fulfillment_policy => undef,
-                returnbranch            => undef,
-            }
-        };
-
         Koha::CirculationRules->set_rules($params);
-        Koha::CirculationRules->set_rules($params_2);
-        Koha::CirculationRules->set_rules($params_3);
+
     } else {
         if ( $VERSION >= '181200020' ) {
             my $sth = $dbh->prepare (
