@@ -97,9 +97,6 @@ exit(1) unless $success;
 $cmd = "sudo service apache2 restart";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
-$cmd = "sudo koha-rebuild-zebra -f -v $instance";
-( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-exit(1) unless $success;
 
 if ($elasticsearch) {
     my $rebuild_es_path =
@@ -109,6 +106,19 @@ if ($elasticsearch) {
     $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $rebuild_es_path -v'";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
+
+    $cmd = q|koha-mysql kohadev -e 'UPDATE systempreferences SET value="Elasticsearch" WHERE variable="SearchEngine"'|;
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+} else {
+    $cmd = q|koha-mysql kohadev -e 'UPDATE systempreferences SET value="Zebra" WHERE variable="SearchEngine"'|;
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
 }
+
+# Assuming you can still change the search engine to Zebra even if set initially to elastic
+$cmd = "sudo koha-rebuild-zebra -f -v $instance";
+( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+exit(1) unless $success;
 
 exit(0);
