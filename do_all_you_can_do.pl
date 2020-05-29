@@ -107,11 +107,11 @@ if ($elasticsearch) {
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 
-    $cmd = q|koha-mysql kohadev -e 'UPDATE systempreferences SET value="Elasticsearch" WHERE variable="SearchEngine"'|;
+    $cmd = qq|koha-mysql $instance -e 'UPDATE systempreferences SET value="Elasticsearch" WHERE variable="SearchEngine"'|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 } else {
-    $cmd = q|koha-mysql kohadev -e 'UPDATE systempreferences SET value="Zebra" WHERE variable="SearchEngine"'|;
+    $cmd = qq|koha-mysql $instance -e 'UPDATE systempreferences SET value="Zebra" WHERE variable="SearchEngine"'|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 }
