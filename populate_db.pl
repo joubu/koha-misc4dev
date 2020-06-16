@@ -105,17 +105,25 @@ our $data_dir  = "$root/installer/data/mysql";
 our $installer = C4::Installer->new;
 my $lang = $marcflavour eq 'UNIMARC' ? 'fr-FR' : 'en';
 my $koha_structure_file = "$data_dir/kohastructure.sql";
-my @sample_files_mandatory = (
-    glob("$data_dir/mandatory/*.sql"),
-    glob("$data_dir/mandatory/*.yml"),
-    "$data_dir/audio_alerts.sql",
-    "$data_dir/sysprefs.sql",
-    "$data_dir/userflags.sql",
-    "$data_dir/userpermissions.sql",
-    "$data_dir/account_offset_types.sql",
-    "$data_dir/account_credit_types.sql",
-    "$data_dir/account_debit_types.sql",
+
+my @installer_files = qw(
+    sysprefs.sql
+    subtag_registry.sql
+    auth_val_cat.sql
+    message_transport_types.sql
+    sample_notices_message_attributes.sql
+    sample_notices_message_transports.sql
+    keyboard_shortcuts.sql
+    userflags.sql
+    userpermissions.sql
+    audio_alerts.sql
+    account_offset_types.sql
+    account_credit_types.sql
+    account_debit_types.sql
 );
+# Looking in installer/data/mysql for backward compatibility
+my @sample_files_mandatory = map { -f $root . "/installer/data/mysql/mandatory/$_" ? $root . "/installer/data/mysql/mandatory/$_" : $root . "/installer/data/mysql/$_"} @installer_files;
+
 my @marc21_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
 my @marc21_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
 
