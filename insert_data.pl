@@ -207,7 +207,12 @@ sub configure_selfreg {
 
 sub configure_selfcheckout {
     C4::Context->set_preference('WebBasedSelfCheck', 1);
-    C4::Context->set_preference('AllowSelfCheckReturns', 1);
+    if ( $VERSION >= '191200074' ) {
+        # Syspref renamed by bug 25147
+        C4::Context->set_preference('SCOAllowCheckin', 1);
+    } else {
+        C4::Context->set_preference('AllowSelfCheckReturns', 1);
+    }
     C4::Context->set_preference('AutoSelfCheckAllowed', 1);
     C4::Context->set_preference('AutoSelfCheckID', 'self_checkout');
     C4::Context->set_preference('AutoSelfCheckPass', 'self_checkout');
