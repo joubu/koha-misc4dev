@@ -15,6 +15,10 @@
 
 use Modern::Perl;
 
+BEGIN {
+    $ENV{KOHA_DB_DO_NOT_RAISE_OR_PRINT_ERROR} = 1;
+};
+
 use Getopt::Long;
 use Pod::Usage;
 
@@ -86,7 +90,6 @@ if (     $marcflavour ne 'MARC21'
     pod2usage;
 }
 
-$ENV{KOHA_DB_DO_NOT_RAISE_OR_PRINT_ERROR} = 1;
 my $dbh = C4::Context->dbh; # At the beginning to die if DB does not exist.
 
 my ( $prefs_count ) = $dbh->selectrow_array(q|SELECT COUNT(*) FROM systempreferences|);
