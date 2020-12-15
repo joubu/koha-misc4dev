@@ -87,3 +87,9 @@ To generate a graph, copy and paste the "Average" section into a spreadsheet pro
 You can take a look at my generated graph in `benchmark_data/Joubu/results.ods`
 
 
+On debian 9 and Zebra
+16.11 to 20.11
+sudo apt install libcatmandu-store-elasticsearch-perl libtext-unaccent-perl libswagger2-perl libdata-util-perl libmodule-build-xsutil-perl
+sudo cpanm Catmandu
+sudo cpanm Catmandu::Importer::MARC
+

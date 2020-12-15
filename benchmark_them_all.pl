@@ -17,12 +17,13 @@ use Modern::Perl;
 use File::Basename qw( dirname );
 use Cwd 'abs_path';
 use IPC::Cmd qw( run );
+use Data::Dumper;
 
 my $iterations = 5;
 
-my @versions = qw( 3.14 3.16 3.18 3.20 3.22 16.05 16.11 );
-our $koha_root = q|/home/vagrant/kohaclone|;
-my $git_remote = q|Joubu|;
+my @versions = qw( 16.11 17.05 17.11 18.05 18.11 19.05 19.11 20.05 20.11 );
+our $koha_root = q|/kohadevbox/koha|;
+my $git_remote = q|gitlab|;
 our $verbose = 0;
 our $kohadev = q|kohadev|;
 our $output_dir = q|/tmp|;
@@ -44,27 +45,32 @@ for my $version ( @versions ) {
 
     die "Fail to create a local branch ($branch_name) from repo '$git_remote'. Make sure it exists" unless $success;
 
-    if ( -f $koha_root . '/debian/templates/plack.psgi' ) {
-        my @output = do_all_iterations( "with_plack" );
-        write_output( $version . '_plack', @output );
-    }
-
     my @output = do_all_iterations();
     write_output( $version, @output );
 }
 
 sub reset_my_db {
-    $cmd = qq|mysql -u koha_$kohadev -ppassword -e"DROP DATABASE koha_$kohadev"|;
+    my $mysql_auth_file=q|/etc/mysql/koha_kohadev.cnf|;
+    $cmd = qq|mysql --defaults-file=$mysql_auth_file -e"DROP DATABASE koha_kohadev"|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
-    $cmd = qq|mysql -u koha_$kohadev -ppassword -e"CREATE DATABASE koha_$kohadev"|;
+    $cmd = qq|mysql --defaults-file=$mysql_auth_file -e"CREATE DATABASE koha_kohadev"|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
-    $cmd = q|perl /home/vagrant/koha-misc4dev/do_all_you_can_do.pl|;
+    $cmd = q|KOHA_ELASTICSEARCH=0 perl /kohadevbox/misc4dev/do_all_you_can_do.pl \
+        --instance kohadev \
+        --userid koha \
+        --password koha \
+        --marcflavour MARC21 \
+        --koha_dir /kohadevbox/koha \
+        --opac-base-url http://koha:8080 \
+        --intranet-base-url http://koha:8081 \
+        --gitify_dir /kohadevbox/gitify
+    |;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
+    die Dumper $full_buf unless $success;
 }
 
 sub restart_memcached {
-    $cmd = q|sudo service memcached restart|;
-    run( command => $cmd, verbose => $verbose );
+    system(q{flush_memcached});
 }
 sub restart_plack {
     $cmd = qq|sudo koha-plack --restart $kohadev|;
@@ -75,37 +81,18 @@ sub restart_apache {
     run( command => $cmd, verbose => $verbose );
 }
 
-sub enable_plack {
-    $cmd = qq|sudo cp $koha_root/debian/templates/plack.psgi /etc/koha/sites/kohadev/plack.psgi|;
-    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
-    `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/lib#/home/vagrant/kohaclone# /etc/koha/sites/kohadev/plack.psgi`;
-    `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#/home/vagrant/kohaclone/opac# /etc/koha/sites/kohadev/plack.psgi`;
-    $cmd = qq|sudo koha-plack --enable kohadev|;
-    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
-    restart_plack();
-    restart_apache();
-}
-sub disable_plack {
-    $cmd = qq|sudo koha-plack --disable kohadev|;
-    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
-    restart_apache();
-}
-
 sub do_all_iterations {
-    my ( $with_plack ) = @_;
-    msg( ( $with_plack ? "With Plack" : "Without Plack" ), 4);
     msg("Reset the database", 3);
     reset_my_db();
     msg("Restart memcached", 3);
     restart_memcached();
-    msg( ( $with_plack ? "Enable Plack" : "Disable Plack" ), 3);
-    $with_plack ? enable_plack() : disable_plack();
+    restart_apache();
+    restart_plack();
     my ( @output, $output );
     msg("First shoot to populate caches", 3);
     do_one_iteration();
     for my $i ( 1 .. $iterations ) {
-        msg("Processing Iteration $i/$iterations" . ( $with_plack ? " (plack)" : "" ), 3);
+        msg("Processing Iteration $i/$iterations", 3);
         $output = do_one_iteration();
         push @output, @$output;
     }
@@ -113,8 +100,10 @@ sub do_all_iterations {
 }
 
 sub do_one_iteration {
-    $cmd = qq|sudo koha-shell $kohadev -p -c "PERL5LIB=$PERL5LIB perl t/db_dependent/selenium/basic_workflow.t"|;
+    $cmd = qq|koha-shell $kohadev -p -c "perl t/db_dependent/selenium/basic_workflow.t"|;
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => $verbose );
+    warn Dumper $full_buf;
+    die Dumper $full_buf unless $success;
     return $stderr_buf;
 }
 
