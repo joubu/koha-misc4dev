@@ -1,0 +1,14 @@
+[% BLOCK render_property %]
+"[% property.name %]": {
+    "type": [% property.type %],
+    "description": "[% property.description %]"
+}
+[% END %]
+{
+  "type": "object",
+  "properties": {
+  [%- FOREACH property IN properties -%]
+    [% PROCESS render_property property=property -%][% UNLESS loop.last %],[% END %]
+  [%- END -%]
+  }
+}
