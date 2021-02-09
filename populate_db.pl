@@ -92,6 +92,9 @@ if (     $marcflavour ne 'MARC21'
 
 my $dbh = C4::Context->dbh; # At the beginning to die if DB does not exist.
 
+my $HandleError = $dbh->{HandleError};
+$dbh->{HandleError} = sub { return 1 };
+
 my ( $prefs_count ) = $dbh->selectrow_array(q|SELECT COUNT(*) FROM systempreferences|);
 my ( $patrons_count ) = $dbh->selectrow_array(q|SELECT COUNT(*) FROM borrowers|);
 if ( $prefs_count or $patrons_count ) {
