@@ -274,7 +274,8 @@ sub insert_acquisition_data {
            budget_period_id => $budget->{budget_period_id},
     }});
 
-    C4::Context->set_preference('gist', '0|0.12|0.1965');
+    C4::Context->set_preference( ( $VERSION < 201200004 ) ? 'gist' : 'TaxRates', '0|0.12|0.1965');
+
     my $vendor = $builder->build({ source => 'Aqbookseller', value => {
                        name => 'My Vendor',
                      active => 1,
