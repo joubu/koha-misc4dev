@@ -106,7 +106,6 @@ $ENV{KOHA_DB_DO_NOT_RAISE_OR_PRINT_ERROR} = 0;
 our $root      = C4::Context->config('intranetdir');
 our $data_dir  = "$root/installer/data/mysql";
 our $installer = C4::Installer->new;
-my $lang = $marcflavour eq 'UNIMARC' ? 'fr-FR' : 'en';
 my $koha_structure_file = "$data_dir/kohastructure.sql";
 
 my @installer_files = qw(
@@ -124,26 +123,46 @@ my @installer_files = qw(
     account_credit_types.sql
     account_debit_types.sql
 );
-# Looking in installer/data/mysql for backward compatibility
-my @sample_files_mandatory = map { -f $root . "/installer/data/mysql/mandatory/$_" ? $root . "/installer/data/mysql/mandatory/$_" : $root . "/installer/data/mysql/$_"} @installer_files;
 
-my @marc21_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
-my @marc21_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
-
-my @unimarc_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.yml" ) );
-my @unimarc_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.yml" ),
-                                               glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.ymL" ),
-                                             );
-
-my @sample_lang_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_mandatory : @marc21_sample_lang_files_mandatory;
-my @sample_lang_files_optional = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_optional : @marc21_sample_lang_files_optional;
-
-my @marc21_marc_sample_files_mandatory  = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.yml" ) );
-my @unimarc_marc_sample_files_mandatory = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc_complet/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc_complet/*/*.yml" ) );
-
-my @marc_sample_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_marc_sample_files_mandatory : @marc21_marc_sample_files_mandatory;
-
+my (
+    @sample_files_mandatory,     @sample_lang_files_mandatory,
+    @sample_lang_files_optional, @marc_sample_files_mandatory
+);
 my $version = get_version();
+$version =~ s|\.||g;
+if ( $version < 211200036 ) {
+    my $lang = $marcflavour eq 'UNIMARC' ? 'fr-FR' : 'en';
+    # Looking in installer/data/mysql for backward compatibility
+    @sample_files_mandatory = map { -f $root . "/installer/data/mysql/mandatory/$_" ? $root . "/installer/data/mysql/mandatory/$_" : $root . "/installer/data/mysql/$_"} @installer_files;
+
+    my @marc21_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
+    my @marc21_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
+
+    my @unimarc_sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/1-Obligatoire/*.yml" ) );
+    my @unimarc_sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/2-Optionel/*.yml" ),
+                                                   glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.sql"), glob( $root . "/installer/data/mysql/fr-FR/3-LecturePub/*.ymL" ),
+                                                 );
+
+    @sample_lang_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_mandatory : @marc21_sample_lang_files_mandatory;
+    @sample_lang_files_optional = $marcflavour eq 'UNIMARC' ? @unimarc_sample_lang_files_optional : @marc21_sample_lang_files_optional;
+
+    my @marc21_marc_sample_files_mandatory  = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.yml" ) );
+    my @unimarc_marc_sample_files_mandatory = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc_complet/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc_complet/*/*.yml" ) );
+
+    @marc_sample_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_marc_sample_files_mandatory : @marc21_marc_sample_files_mandatory;
+} else {
+    my $lang = 'en';
+    @sample_files_mandatory = map { $root . "/installer/data/mysql/mandatory/$_" } @installer_files;
+
+    # Only yml files should exist here, but it's certainly better to continue supporting sql files
+    @sample_lang_files_mandatory    = ( glob( $root . "/installer/data/mysql/$lang/mandatory/*.sql"), glob( $root . "/installer/data/mysql/$lang/mandatory/*.yml" ) );
+    @sample_lang_files_optional     = ( glob( $root . "/installer/data/mysql/$lang/optional/*.sql"), glob( $root . "/installer/data/mysql/$lang/optional/*.yml" ) );
+
+    my @marc21_marc_sample_files_mandatory  = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/marc21/*/*.yml" ) );
+    my @unimarc_marc_sample_files_mandatory = ( glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.sql"), glob( $root . "/installer/data/mysql/$lang/marcflavour/unimarc/*/*.yml" ) );
+
+    @marc_sample_files_mandatory = $marcflavour eq 'UNIMARC' ? @unimarc_marc_sample_files_mandatory : @marc21_marc_sample_files_mandatory;
+}
 
 initialize_data();
 #update_database();
@@ -184,6 +203,7 @@ sub initialize_data {
     },undef,$marcflavour);
 
     # set version
+    my $version = get_version();
     say "Setting Koha version to $version..."
         if $verbose;
     $dbh->do(qq{
