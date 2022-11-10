@@ -69,15 +69,22 @@ my $misc_dir = dirname( abs_path( $0 ) );
 my ( $cmd, $success, $error_code, $full_buf, $stdout_buf, $stderr_buf );
 my $PERL5LIB = $ENV{PERL5LIB};
 
+# Populate the DB with Koha sample data
 $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v --opac-base-url $opac_base_url --intranet-base-url $intranet_base_url --marcflavour $marcflavour'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Create a superlibrarian user
 $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl $create_superlibrarian_opts'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Insert bibliographic, authority records, and items
 $cmd = "sudo koha-shell $instance -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl --marcflavour $marcflavour'";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Insert the custom SQL queries if shared/custom.sql exists
 if ( -f "$shared_dir/custom.sql" ) {
     $cmd = "sudo koha-mysql $instance < $shared_dir/custom.sql";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
@@ -85,19 +92,32 @@ if ( -f "$shared_dir/custom.sql" ) {
 } else {
     say "There is no custom.sql ($shared_dir/custom.sql) file, skipping."
 }
+
+# Copy debian files
 $cmd = "sudo perl $misc_dir/cp_debian_files.pl --instance=$instance --koha_dir=$koha_dir --gitify_dir=$gitify_dir";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Setup SIP
 $cmd = "PERL5LIB=$PERL5LIB perl $misc_dir/setup_sip.pl --instance=$instance";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Regenerate Plack psgi files
 $cmd = "PERL5LIB=$PERL5LIB perl $misc_dir/reset_plack.pl --koha_dir=$koha_dir --instance=$instance";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Restart Apache
 $cmd = "sudo service apache2 restart";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
 
+$cmd = "(cd $koha_dir ; yarn build_js)";
+( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+exit(1) unless $success;
+
+# Rebuild Elastic
 if ($elasticsearch) {
     my $rebuild_es_path =
       -e "$koha_dir/misc/search_tools/rebuild_elastic_search.pl"
@@ -116,6 +136,7 @@ if ($elasticsearch) {
     exit(1) unless $success;
 }
 
+# Rebuild Zebra
 # Assuming you can still change the search engine to Zebra even if set initially to elastic
 $cmd = "sudo koha-rebuild-zebra -f -v $instance";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
