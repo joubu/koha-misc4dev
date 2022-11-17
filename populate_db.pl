@@ -25,6 +25,8 @@ use Pod::Usage;
 use C4::Installer;
 use C4::Context;
 
+use Koha;
+
 use Koha::SearchEngine::Elasticsearch;
 
 =head1 NAME
@@ -232,8 +234,7 @@ sub execute_sqlfile {
 }
 
 sub get_version {
-    do $root . '/kohaversion.pl';
-    my $version = kohaversion();
+    my $version = $Koha::VERSION;
     $version =~ s/(\d)\.(\d{2})\.(\d{2})\.(\d{3})/$1.$2$3$4/;
     return $version;
 }
