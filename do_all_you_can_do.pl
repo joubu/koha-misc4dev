@@ -20,6 +20,8 @@ use IPC::Cmd qw( run );
 
 use Getopt::Long;
 
+use Koha;
+
 my $instance;
 my $userid;
 my $password;
@@ -113,9 +115,13 @@ $cmd = "sudo service apache2 restart";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
 
-$cmd = "(cd $koha_dir ; yarn build_js)";
-( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-exit(1) unless $success;
+my $version = get_version();
+$version =~ s|\.||g;
+if ( $version >= 220600079 ) {
+    $cmd = "(cd $koha_dir ; yarn build_js)";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+}
 
 # Rebuild Elastic
 if ($elasticsearch) {
@@ -143,3 +149,9 @@ $cmd = "sudo koha-rebuild-zebra -f -v $instance";
 exit(1) unless $success;
 
 exit(0);
+
+sub get_version {
+    my $version = $Koha::VERSION;
+    $version =~ s/(\d)\.(\d{2})\.(\d{2})\.(\d{3})/$1.$2$3$4/;
+    return $version;
+}
