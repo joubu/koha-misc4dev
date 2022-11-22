@@ -118,7 +118,7 @@ exit(1) unless $success;
 my $version = get_version();
 $version =~ s|\.||g;
 if ( $version >= 220600079 ) {
-    $cmd = "(cd $koha_dir ; yarn build_js)";
+    $cmd = "sudo koha-shell $instance -c '(cd $koha_dir ; yarn build_js)'";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 }
