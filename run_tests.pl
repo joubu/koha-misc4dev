@@ -30,7 +30,7 @@ my (
     $koha_user,            $koha_pass,
     $node_path,            $selenium_addr,
     $selenium_port,        $prove_cpus,
-    $run_coverage,         $run_all_tests,
+    $with_coverage,        $run_all_tests,
     $run_light_test_suite, $run_elastic_tests_only,
     $run_selenium_tests_only,
 );
@@ -47,7 +47,7 @@ GetOptions(
     'selenium-addr=s'         => \$selenium_addr,
     'selenium-port=s'         => \$selenium_port,
     'prove-cpus=s'            => \$prove_cpus,
-    'run-with-coverage'       => \$run_coverage,
+    'with-coverage'           => \$with_coverage,
     'run-all-tests'           => \$run_all_tests,
     'run-light-test-suite'    => \$run_light_test_suite,
     'run-elastic-tests-only'  => \$run_elastic_tests_only,
@@ -61,6 +61,9 @@ pod2usage("One and only one run-* parameters must be provided")
   xor $run_light_test_suite
   xor $run_elastic_tests_only
   xor $run_selenium_tests_only;
+
+pod2usage("Coverage can only be generated if --run-all-tests is passed")
+  if $with_coverage && !$run_all_tests;
 
 $instance          ||= $ENV{KOHA_INSTANCE}     || 'kohadev';
 $db_password       ||= $ENV{KOHA_DB_PASSWORD}  || 'password';
@@ -97,7 +100,7 @@ $CWD = $koha_dir;
 
 my @commands;
 
-if ($run_coverage) {
+if ($with_coverage) {
     push @commands, q{rm -rf cover_db};
 }
 
@@ -148,10 +151,11 @@ elsif ($run_elastic_tests_only) {
     );
 }
 else {
-    if ( $run_coverage ) {
-        $env->{PERL5OPT} = q{-MDevel::Cover=-db,/cover_db};
-    }
     @prove_files = map { chomp ; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
+}
+
+if ( $with_coverage ) {
+    $env->{PERL5OPT} = q{-MDevel::Cover=-db,/cover_db};
 }
 
 push @commands, build_prove_command(
@@ -165,7 +169,7 @@ push @commands, build_prove_command(
     }
 );
 
-if ($run_coverage) {
+if ($with_coverage) {
     push @commands, q{mkdir cover_db},
       q{cp -r /cover_db/* cover_db},
       q{cover -report clover};
@@ -210,7 +214,7 @@ run_tests.pl - Script to run Koha test files
 
 =head1 SYNOPSIS
 
-./run_tests.pl --instance=kohadev --db-password=password --koha-dir=/kohadevbox/koha --intranet-base-url=http://koha:8081 --opac-base-url=http://koha:8080 --koha-user=koha --koha-pass=koha --node-path=/kohadevbox/node_modules --selenium-addr=selenium --selenium-port=4444 [--prove-cpus=4] [--run-with-coverage --run-all-tests --run-light-test-suite --run-elastic-tests-only --run-selenium-tests-only]
+./run_tests.pl --instance=kohadev --db-password=password --koha-dir=/kohadevbox/koha --intranet-base-url=http://koha:8081 --opac-base-url=http://koha:8080 --koha-user=koha --koha-pass=koha --node-path=/kohadevbox/node_modules --selenium-addr=selenium --selenium-port=4444 [--prove-cpus=4] [--run-all-tests --run-light-test-suite --run-elastic-tests-only --run-selenium-tests-only] [--with-coverage]
 
 =head1 DESCRIPTION
 
@@ -278,11 +282,6 @@ Can be set using SELENIUM_PORT.
 Number of CPUs to use when running the prove command.
 Can be set using KOHA_INSTANCE.
 
-=item B<--run-with-coverage>
-
-Run all tests and generate a cover_db directory with code coverage metrics.
-Can be set using COVERAGE.
-
 =item B<--run-all-tests>
 
 Run all the tests!
@@ -298,6 +297,11 @@ Only run the elastic tests.
 =item B<--run-selenium-tests-only>
 
 Only run the selenium tests.
+
+=item B<--with-coverage>
+
+Run all tests and generate a cover_db directory with code coverage metrics.
+Can be set using COVERAGE.
 
 =back
 
