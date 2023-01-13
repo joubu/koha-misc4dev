@@ -92,7 +92,6 @@ my $env = {
     NODE_PATH           => $node_path,
     SELENIUM_ADDR       => $selenium_addr,
     SELENIUM_PORT       => $selenium_port,
-    TEST_QA             => 1,
     JUNIT_OUTPUT_FILE   => q{junit_main.xml},
 };
 
