@@ -25,14 +25,14 @@ use Pod::Usage;
 
 our ( $instance, $db_password );
 my (
-    $help,                 $koha_dir,
-    $intranet_base_url,    $opac_base_url,
-    $koha_user,            $koha_pass,
-    $node_path,            $selenium_addr,
-    $selenium_port,        $prove_cpus,
-    $with_coverage,        $run_all_tests,
-    $run_light_test_suite, $run_elastic_tests_only,
-    $run_selenium_tests_only,
+    $help,                   $koha_dir,
+    $intranet_base_url,      $opac_base_url,
+    $koha_user,              $koha_pass,
+    $env_path,               $node_path,
+    $selenium_addr,          $selenium_port,
+    $prove_cpus,             $with_coverage,
+    $run_all_tests,          $run_light_test_suite,
+    $run_elastic_tests_only, $run_selenium_tests_only,
 );
 GetOptions(
     'h|help'                  => \$help,
@@ -44,6 +44,7 @@ GetOptions(
     'koha-user=s'             => \$koha_user,
     'koha-pass=s'             => \$koha_pass,
     'node-path=s'             => \$node_path,
+    'env-path=s'              => \$env_path,
     'selenium-addr=s'         => \$selenium_addr,
     'selenium-port=s'         => \$selenium_port,
     'prove-cpus=s'            => \$prove_cpus,
@@ -72,6 +73,7 @@ $intranet_base_url ||= $ENV{KOHA_INTRANET_URL} || 'http://koha:8081';
 $opac_base_url     ||= $ENV{KOHA_OPAC_URL}     || 'http://koha:8080';
 $koha_user         ||= $ENV{KOHA_USER}         || 'koha';
 $koha_pass         ||= $ENV{KOHA_PASS}         || 'koha';
+$env_path          ||= $ENV{PATH};
 $node_path         ||= $ENV{NODE_PATH};
 $selenium_addr     ||= $ENV{SELENIUM_ADDR}     || 'selenium';
 $selenium_port     ||= $ENV{SELENIUM_PORT}     || 4444;
@@ -89,6 +91,7 @@ my $env = {
     KOHA_OPAC_URL       => $opac_base_url,
     KOHA_USER           => $koha_user,
     KOHA_PASS           => $koha_pass,
+    PATH                => $env_path,
     NODE_PATH           => $node_path,
     SELENIUM_ADDR       => $selenium_addr,
     SELENIUM_PORT       => $selenium_port,
