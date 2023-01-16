@@ -188,13 +188,15 @@ sub build_prove_command {
     my $prove_files = $params->{prove_files};
     my $create_success_files = $params->{create_success_file};
     return
-        join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
+        qq{koha-shell $instance -c "}
+      . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
       . ' prove '
       . ( $prove_cpus ? "-j $prove_cpus " : "" )
       . join( ' ', map { qq{--rules='$_'} } @$prove_rules ) . ' '
       . join( ' ', @$prove_opts ) . ' '
       . join( ' ', @$prove_files ) . ' '
-      . ( $create_success_file ? '&& touch testing.success' : '' );
+      . ( $create_success_file ? '&& touch testing.success' : '' )
+      . q{"};
 }
 
 sub get_commands_to_reset_db {
