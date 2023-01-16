@@ -116,7 +116,7 @@ if ( $run_all_tests || $run_selenium_tests_only ) {
 
     push @commands, get_commands_to_reset_db();
 }
-my @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t', 'par=**' );
+my @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
 my @prove_opts  = ( '--timer', '--harness=TAP::Harness::JUnit', '--recurse' );
 my @prove_files;
 
@@ -148,6 +148,8 @@ elsif ($run_elastic_tests_only) {
       t/SuggestionEngine_AuthorityFile.t
       t/Koha_SearchEngine_Elasticsearch_Browse.t
     );
+
+    @prove_rules = ('par=**');
 }
 else {
     @prove_files = map { chomp ; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
