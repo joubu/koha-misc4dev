@@ -31,6 +31,7 @@ my $gitify_dir;
 my $opac_base_url;
 my $intranet_base_url;
 my $marcflavour = 'MARC21';
+my $use_existing_db;
 
 GetOptions(
     'elasticsearch'       => \$elasticsearch,
@@ -41,7 +42,8 @@ GetOptions(
     'marcflavour=s'       => \$marcflavour,
     'opac-base-url=s'     => \$opac_base_url,
     'password=s'          => \$password,
-    'userid=s'            => \$userid
+    'userid=s'            => \$userid,
+    'use-existing-db'     => \$use_existing_db,
 );
 
 
@@ -73,27 +75,29 @@ my $PERL5LIB = $ENV{PERL5LIB};
 my $PATH     = $ENV{PATH};
 
 # Populate the DB with Koha sample data
-$cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v --opac-base-url $opac_base_url --intranet-base-url $intranet_base_url --marcflavour $marcflavour'";
-( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-exit(1) unless $success;
-
-# Create a superlibrarian user
-$cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl $create_superlibrarian_opts'";
-( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-exit(1) unless $success;
-
-# Insert bibliographic, authority records, and items
-$cmd = "sudo koha-shell $instance -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl --marcflavour $marcflavour'";
-( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-exit(1) unless $success;
-
-# Insert the custom SQL queries if shared/custom.sql exists
-if ( -f "$shared_dir/custom.sql" ) {
-    $cmd = "sudo koha-mysql $instance < $shared_dir/custom.sql";
+unless ( $use_existing_db ) {
+    $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v --opac-base-url $opac_base_url --intranet-base-url $intranet_base_url --marcflavour $marcflavour'";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
-} else {
-    say "There is no custom.sql ($shared_dir/custom.sql) file, skipping."
+
+    # Create a superlibrarian user
+    $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/create_superlibrarian.pl $create_superlibrarian_opts'";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+
+    # Insert bibliographic, authority records, and items
+    $cmd = "sudo koha-shell $instance -c 'PERL5LIB=$PERL5LIB perl $misc_dir/insert_data.pl --marcflavour $marcflavour'";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+
+    # Insert the custom SQL queries if shared/custom.sql exists
+    if ( -f "$shared_dir/custom.sql" ) {
+        $cmd = "sudo koha-mysql $instance < $shared_dir/custom.sql";
+        ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+        exit(1) unless $success;
+    } else {
+        say "There is no custom.sql ($shared_dir/custom.sql) file, skipping."
+    }
 }
 
 # Copy debian files
