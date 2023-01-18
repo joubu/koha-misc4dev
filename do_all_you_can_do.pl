@@ -20,6 +20,7 @@ use IPC::Cmd qw( run );
 
 use Getopt::Long;
 
+use C4::Context;
 use Koha;
 
 my $instance;
@@ -74,6 +75,22 @@ my ( $cmd, $success, $error_code, $full_buf, $stdout_buf, $stderr_buf );
 my $PERL5LIB = $ENV{PERL5LIB};
 my $PATH     = $ENV{PATH};
 
+my $dbh = C4::Context->dbh; # At the beginning to die if DB does not exist.
+
+my $HandleError = $dbh->{HandleError};
+$dbh->{HandleError} = sub { return 1 };
+
+my ( $prefs_count ) = $dbh->selectrow_array(q|SELECT COUNT(*) FROM systempreferences|);
+my ( $patrons_count ) = $dbh->selectrow_array(q|SELECT COUNT(*) FROM borrowers|);
+my $db_exists = $prefs_count || $patrons_count;
+if ( $db_exists && ! $use_existing_db ) {
+    die "Database is not empty!";
+} elsif ( !$db_exists ) {
+    $use_existing_db = 0;
+}
+$dbh->disconnect;
+$ENV{KOHA_DB_DO_NOT_RAISE_OR_PRINT_ERROR} = 0;
+
 # Populate the DB with Koha sample data
 unless ( $use_existing_db ) {
     $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $misc_dir/populate_db.pl -v --opac-base-url $opac_base_url --intranet-base-url $intranet_base_url --marcflavour $marcflavour'";
@@ -98,6 +115,8 @@ unless ( $use_existing_db ) {
     } else {
         say "There is no custom.sql ($shared_dir/custom.sql) file, skipping."
     }
+} else {
+    say "Reusing existing database";
 }
 
 # Copy debian files
