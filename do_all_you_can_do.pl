@@ -119,7 +119,13 @@ exit(1) unless $success;
 my $version = get_version();
 $version =~ s|\.||g;
 if ( $version >= 220600079 ) {
-    $cmd = "sudo koha-shell $instance -c '(cd $koha_dir ; PATH=$PATH yarn build_js)'";
+    $cmd = "grep -q watch_js package.json";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    my $build_command = $success
+        ? 'build_js' # watch_js exists, run it
+        : 'build';   # Assume we have build that will build js and css
+
+    $cmd = "sudo koha-shell $instance -c '(cd $koha_dir ; PATH=$PATH yarn $build_command)'";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 }
