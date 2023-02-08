@@ -33,6 +33,7 @@ my (
     $prove_cpus,             $with_coverage,
     $run_all_tests,          $run_light_test_suite,
     $run_elastic_tests_only, $run_selenium_tests_only,
+    $run_cypress_tests_only,
 );
 GetOptions(
     'h|help'                  => \$help,
@@ -52,6 +53,7 @@ GetOptions(
     'run-all-tests'           => \$run_all_tests,
     'run-light-test-suite'    => \$run_light_test_suite,
     'run-elastic-tests-only'  => \$run_elastic_tests_only,
+    'run-cypress-tests-only'  => \$run_cypress_tests_only,
     'run-selenium-tests-only' => \$run_selenium_tests_only,
 ) || pod2usage(1);
 
@@ -61,7 +63,8 @@ pod2usage("One and only one run-* parameters must be provided")
   unless  $run_all_tests
   xor $run_light_test_suite
   xor $run_elastic_tests_only
-  xor $run_selenium_tests_only;
+  xor $run_selenium_tests_only
+  xor $run_cypress_tests_only;
 
 pod2usage("Coverage can only be generated if --run-all-tests is passed")
   if $with_coverage && !$run_all_tests;
@@ -169,9 +172,19 @@ push @commands, build_prove_command(
         prove_rules         => \@prove_rules,
         prove_opts          => \@prove_opts,
         prove_files         => \@prove_files,
-        create_success_file => $create_success_file,
     }
 );
+
+if ( $run_all_tests || $run_cypress_tests_only ) {
+    push @commands,
+      build_cypress_command(
+        {
+            env => $env,
+        }
+      );
+}
+
+push @commands, qq{koha-shell $instance -c "touch testing.success"};
 
 if ($with_coverage) {
     push @commands, q{mkdir cover_db},
@@ -191,7 +204,6 @@ sub build_prove_command {
     my $prove_rules = $params->{prove_rules} || [];
     my $prove_opts  = $params->{prove_opts}  || [];
     my $prove_files = $params->{prove_files};
-    my $create_success_files = $params->{create_success_file};
     return
         qq{koha-shell $instance -c "}
       . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
@@ -200,8 +212,13 @@ sub build_prove_command {
       . join( ' ', map { qq{--rules='$_'} } @$prove_rules ) . ' '
       . join( ' ', @$prove_opts ) . ' '
       . join( ' ', @$prove_files ) . ' '
-      . ( $create_success_file ? '&& touch testing.success' : '' )
       . q{"};
+}
+
+sub build_cypress_command {
+    my ($params) = @_;
+    my $env = $params->{env};
+    return q{yarn cypress run --config video=false,screenshotOnRunFailure=false};
 }
 
 sub get_commands_to_reset_db {
@@ -303,6 +320,10 @@ Only run the elastic tests.
 =item B<--run-selenium-tests-only>
 
 Only run the selenium tests.
+
+=item B<--run-cypress-tests-only>
+
+Only run the cypress tests.
 
 =item B<--with-coverage>
 
