@@ -119,7 +119,7 @@ exit(1) unless $success;
 my $version = get_version();
 $version =~ s|\.||g;
 if ( $version >= 220600079 ) {
-    $cmd = "grep -q watch_js package.json";
+    $cmd = "grep -q watch_js $koha_dir/package.json";
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     my $build_command = $success
         ? 'build_js' # watch_js exists, run it
