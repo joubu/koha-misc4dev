@@ -165,15 +165,17 @@ if ( $with_coverage ) {
     $env->{PERL5OPT} = q{-MDevel::Cover=-db,/cover_db};
 }
 
-push @commands, build_prove_command(
-    {
-        env                 => $env,
-        prove_cpus          => $prove_cpus,
-        prove_rules         => \@prove_rules,
-        prove_opts          => \@prove_opts,
-        prove_files         => \@prove_files,
-    }
-);
+if ( $run_all_tests ) {
+    push @commands, build_prove_command(
+        {
+            env                 => $env,
+            prove_cpus          => $prove_cpus,
+            prove_rules         => \@prove_rules,
+            prove_opts          => \@prove_opts,
+            prove_files         => \@prove_files,
+        }
+    );
+}
 
 if ( $run_all_tests || $run_cypress_tests_only ) {
     push @commands,
