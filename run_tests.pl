@@ -165,7 +165,7 @@ if ( $with_coverage ) {
     $env->{PERL5OPT} = q{-MDevel::Cover=-db,/cover_db};
 }
 
-if ( $run_all_tests ) {
+if ( @prove_files ) {
     push @commands, build_prove_command(
         {
             env                 => $env,
