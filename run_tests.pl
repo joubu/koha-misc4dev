@@ -220,7 +220,8 @@ sub build_prove_command {
 sub build_cypress_command {
     my ($params) = @_;
     my $env = $params->{env};
-    return sprintf q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s}, $env->{KOHA_USER}, $env->{KOHA_PASS};
+    return sprintf q{koha-shell %s -c 'yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s'},
+        $instance, $env->{KOHA_USER}, $env->{KOHA_PASS};
 }
 
 sub get_commands_to_reset_db {
