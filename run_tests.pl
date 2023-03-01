@@ -77,7 +77,7 @@ $opac_base_url     ||= $ENV{KOHA_OPAC_URL}     || 'http://koha:8080';
 $koha_user         ||= $ENV{KOHA_USER}         || 'koha';
 $koha_pass         ||= $ENV{KOHA_PASS}         || 'koha';
 $env_path          ||= $ENV{PATH};
-$node_path         ||= $ENV{NODE_PATH};
+$node_path         ||= $ENV{NODE_PATH}         || '/kohadevbox/node_modules';
 $selenium_addr     ||= $ENV{SELENIUM_ADDR}     || 'selenium';
 $selenium_port     ||= $ENV{SELENIUM_PORT}     || 4444;
 $prove_cpus        ||= $ENV{KOHA_PROVE_CPUS};
@@ -221,8 +221,10 @@ sub build_cypress_command {
     my ($params) = @_;
     my $env = $params->{env};
     return
-      sprintf q{koha-shell %s -c 'yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options "mochaFile=junit-cypress.xml,toConsole=true"'},
-      $instance, $env->{KOHA_USER}, $env->{KOHA_PASS};
+        qq{koha-shell $instance -c "}
+      . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
+      . sprintf q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress.xml,toConsole=true'"},
+      $env->{KOHA_USER}, $env->{KOHA_PASS};
 }
 
 sub get_commands_to_reset_db {
