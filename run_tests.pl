@@ -157,7 +157,7 @@ elsif ($run_elastic_tests_only) {
 
     @prove_rules = ('par=**');
 }
-else {
+elsif ($run_all_tests) {
     @prove_files = map { chomp ; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
 }
 
