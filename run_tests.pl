@@ -223,6 +223,7 @@ sub build_cypress_command {
     return
         qq{koha-shell $instance -c "}
       . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
+      . ' '
       . sprintf q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'"},
       $env->{KOHA_USER}, $env->{KOHA_PASS};
 }
