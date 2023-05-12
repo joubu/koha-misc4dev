@@ -217,6 +217,12 @@ sub build_prove_command {
       . q{"};
 }
 
+sub generate_junit_failure {
+    my $date = qx{date --iso-8601=seconds};
+    chomp $date;
+    return qq{ echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Cypress run" time="0.0000" tests="1" failures="1"><testsuite name="Root Suite" timestamp="$date" tests="0" file="" time="0.0000" failures="1"><testcase name="Executable not found"></testcase></testsuite></testsuites>' > junit-cypress-exec.xml};
+}
+
 sub build_cypress_command {
     my ($params) = @_;
     my $env = $params->{env};
@@ -224,8 +230,9 @@ sub build_cypress_command {
         qq{koha-shell $instance -c "}
       . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
       . ' '
-      . sprintf q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'"},
-      $env->{KOHA_USER}, $env->{KOHA_PASS};
+      . sprintf q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'}, $env->{KOHA_USER}, $env->{KOHA_PASS}
+      . q{"}
+      . sprintf q{ || } . generate_junit_failure()
 }
 
 sub get_commands_to_reset_db {
