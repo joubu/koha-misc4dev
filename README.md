@@ -1,24 +1,24 @@
 # Koha misc4dev
 
-Create an handy kit for Koha developpers (http://koha-community.org).
-In a first time it will provide scripts to fill the DB with useful data.
-
-This project does not have the aim to grow much.
+Create a handy kit for Koha developpers (https://koha-community.org).
 
 ## Why this is not in the Koha codebase?
+
 The Koha community does not have enough people to test patches.
 Developpers need handy tools to make their everyday works and do not want to wait for people to be interested in what they need.
 
 ## Who should not use these scripts?
-You should not use these script if you are not running into a devbox.
-If you do not know what is kohadevbox, you should not start from here, see
-http://wiki.koha-community.org/wiki/Developer_handbook first, then https://github.com/digibib/kohadevbox
+
+If you do not know what they are, do not use them.
+
+They are mostly used internally by koha-testing-docker and so our CI (jenkins), see
+http://wiki.koha-community.org/wiki/Developer_handbook first, then https://gitlab.com/koha-community/koha-testing-docker/
 
 ## How to use it
 
 ### You want to fill your existing database
 
-  # As the vagrant user
+  # As the root user
 
   % perl do_all_you_can_do.pl
 
@@ -26,11 +26,13 @@ http://wiki.koha-community.org/wiki/Developer_handbook first, then https://githu
 
 Note that this is very useful if you want to git bisect
 
-  # As the vagrant user
+  # As the root user
 
-  % alias reset_my_db='mysql -u koha_kohadev -ppassword -e"DROP DATABASE koha_kohadev";mysql -u koha_kohadev -ppassword -e"CREATE DATABASE koha_kohadev";perl /home/vagrant/koha-dev-misc/do_all_you_can_do.pl'
+  % alias reset_my_db='mysql -u koha_kohadev -ppassword -e"DROP DATABASE koha_kohadev";mysql -u koha_kohadev -ppassword -e"CREATE DATABASE koha_kohadev";perl /kohadevbox/misc4dev/do_all_you_can_do.pl'
 
   % reset_my_db
+
+If you are inside a koha-testing-docker container you should use the `reset_all` alias instead.
 
 ### You want to benchmark Koha
 
@@ -41,7 +43,7 @@ A new branch perf_${version}.x has been pushed to [[https://github.com/joubu/Koh
 To benchmark Koha using the `t/db_dependent/selenium/basic_workflow.pl` script, you need to do the following steps:
 
 #### Add the Joubu's Koha git repository
-  # As the vagrant user
+  # As the root user
 
   % cd kohaclone
   % git remote add Joubu https://github.com/joubu/Koha.git
