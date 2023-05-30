@@ -196,7 +196,7 @@ if ($with_coverage) {
 
 for my $cmd ( @commands ) {
     my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-    exit(1) unless $success;
+    exit(1) unless $success; # FIXME Maybe we need to exit $error_code? Or at least deal with the different possible cases.
 }
 
 sub build_prove_command {
@@ -220,7 +220,7 @@ sub build_prove_command {
 sub generate_junit_failure {
     my $date = qx{date --iso-8601=seconds};
     chomp $date;
-    return qq{ echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Cypress run" time="0.0000" tests="1" failures="1"><testsuite name="Root Suite" timestamp="$date" tests="0" file="" time="0.0000" failures="1"><testcase name="Executable not found"></testcase></testsuite></testsuites>' > junit-cypress-exec.xml};
+    return qq{ echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Cypress run" time="0.0000" tests="1" failures="1"><testsuite name="Root Suite" timestamp="$date" tests="0" file="" time="0.0000" failures="1"><testcase name="Executable not found"></testcase></testsuite></testsuites>' > junit-cypress-exec.xml;};
 }
 
 sub build_cypress_command {
@@ -230,9 +230,9 @@ sub build_cypress_command {
         qq{koha-shell $instance -c "}
       . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
       . ' '
-      . sprintf q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'}, $env->{KOHA_USER}, $env->{KOHA_PASS}
-      . q{"}
-      . sprintf q{ || } . generate_junit_failure()
+      . sprintf ( q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'}, $env->{KOHA_USER}, $env->{KOHA_PASS} )
+      . q{";}
+      . sprintf q{err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then } . generate_junit_failure() . q{ else echo "Cypress returned error code '$err'"; fi; exit $err; }
 }
 
 sub get_commands_to_reset_db {
