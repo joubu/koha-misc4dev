@@ -220,7 +220,7 @@ sub build_prove_command {
 sub generate_junit_failure {
     my $date = qx{date --iso-8601=seconds};
     chomp $date;
-    return qq{ echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Cypress run" time="0.0000" tests="1" failures="1"><testsuite name="Root Suite" timestamp="$date" tests="0" file="" time="0.0000" failures="1"><testcase name="Executable not found"></testcase></testsuite></testsuites>' > junit-cypress-exec.xml;};
+    return qq{ echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Cypress run" time="0.0000" tests="1" failures="1"><testsuite name="Root Suite" timestamp="$date" tests="0" file="" time="0.0000" failures="1"><testcase name="Executable not found"><failure message="Cypress executable not found." type="AssertionError">Cypress executable not found!</failure></testcase></testsuite></testsuites>' > junit-cypress-exec.xml;};
 }
 
 sub build_cypress_command {
