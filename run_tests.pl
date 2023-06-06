@@ -81,6 +81,7 @@ $node_path         ||= $ENV{NODE_PATH}         || '/kohadevbox/node_modules';
 $selenium_addr     ||= $ENV{SELENIUM_ADDR}     || 'selenium';
 $selenium_port     ||= $ENV{SELENIUM_PORT}     || 4444;
 $prove_cpus        ||= $ENV{KOHA_PROVE_CPUS};
+$with_coverage     ||= $ENV{COVERAGE}          || 0;
 
 my $create_success_file = exists $ENV{RUN_TESTS_AND_EXIT} && $ENV{RUN_TESTS_AND_EXIT} eq 'yes';
 
