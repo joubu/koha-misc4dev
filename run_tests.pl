@@ -189,15 +189,23 @@ if ( $run_all_tests || $run_cypress_tests_only ) {
 
 push @commands, qq{koha-shell $instance -c "touch testing.success"};
 
-if ($with_coverage) {
-    push @commands, q{mkdir cover_db},
-      q{cp -r /cover_db/* cover_db},
-      q{cover -report clover};
-}
-
 for my $cmd ( @commands ) {
     my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-    exit(1) unless $success; # FIXME Maybe we need to exit $error_code? Or at least deal with the different possible cases.
+    unless ($with_coverage) { # We want to generate coverage even if there are failures
+        exit(1) unless $success; # FIXME Maybe we need to exit $error_code? Or at least deal with the different possible cases.
+    }
+}
+
+if ($with_coverage) {
+    my @coverage_commands = (
+        q{mkdir cover_db},
+        q{cp -r /cover_db/* cover_db},
+        q{cover -report clover}
+    );
+    for my $cmd (@coverage_commands) {
+        my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) =
+          run( command => $cmd, verbose => 1 );
+    }
 }
 
 sub build_prove_command {
