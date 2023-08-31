@@ -123,6 +123,16 @@ if ( $run_all_tests || $run_selenium_tests_only ) {
 
     push @commands, get_commands_to_reset_db();
 }
+
+if ( $run_all_tests ) {
+    my $misc4dev_dir = dirname(__FILE__);
+    push @commands, qq{koha-mysql $instance < ${misc4dev_dir}/data/sql/marc21/dump_kohadev_v19.11.00.sql};
+    push @commands, qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'};
+    push @commands, qq{koha-mysql $instance -e 'UPDATE systempreferences SET value="21.1100000" WHERE variable="version"'};
+    push @commands, qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'};
+    push @commands, get_commands_to_reset_db();
+}
+
 my @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
 my @prove_opts  = ( '--timer', '--harness=TAP::Harness::JUnit', '--recurse' );
 my @prove_files;
