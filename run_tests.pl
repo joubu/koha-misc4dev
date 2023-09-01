@@ -33,7 +33,7 @@ my (
     $prove_cpus,             $with_coverage,
     $run_all_tests,          $run_light_test_suite,
     $run_elastic_tests_only, $run_selenium_tests_only,
-    $run_cypress_tests_only,
+    $run_cypress_tests_only, $run_db_upgrade_only,
 );
 GetOptions(
     'h|help'                  => \$help,
@@ -55,6 +55,7 @@ GetOptions(
     'run-elastic-tests-only'  => \$run_elastic_tests_only,
     'run-cypress-tests-only'  => \$run_cypress_tests_only,
     'run-selenium-tests-only' => \$run_selenium_tests_only,
+    'run-db-upgrade-only'     => \$run_db_upgrade_only,
 ) || pod2usage(1);
 
 pod2usage( -verbose => 2 ) if $help;
@@ -64,7 +65,8 @@ pod2usage("One and only one run-* parameters must be provided")
   xor $run_light_test_suite
   xor $run_elastic_tests_only
   xor $run_selenium_tests_only
-  xor $run_cypress_tests_only;
+  xor $run_cypress_tests_only
+  xor $run_db_upgrade_only;
 
 pod2usage("Coverage can only be generated if --run-all-tests is passed")
   if $with_coverage && !$run_all_tests;
@@ -125,12 +127,13 @@ if ( $run_all_tests || $run_selenium_tests_only ) {
 }
 
 if ( $run_all_tests ) {
-    my $misc4dev_dir = dirname(__FILE__);
-    push @commands, qq{koha-mysql $instance < ${misc4dev_dir}/data/sql/marc21/dump_kohadev_v19.11.00.sql};
-    push @commands, qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'};
-    push @commands, qq{koha-mysql $instance -e 'UPDATE systempreferences SET value="21.1100000" WHERE variable="version"'};
-    push @commands, qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'};
+    push @commands, get_commands_to_upgrade_db();
     push @commands, get_commands_to_reset_db();
+}
+
+if ( $run_db_upgrade_only ) {
+    push @commands, get_commands_to_reset_db();
+    push @commands, get_commands_to_upgrade_db();
 }
 
 my @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
@@ -264,6 +267,16 @@ sub get_commands_to_reset_db {
     );
 }
 
+sub get_commands_to_upgrade_db {
+    my $misc4dev_dir = dirname(__FILE__);
+    return (
+        qq{koha-mysql $instance < ${misc4dev_dir}/data/sql/marc21/dump_kohadev_v19.11.00.sql},
+        qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'},
+        qq{koha-mysql $instance -e 'UPDATE systempreferences SET value="21.1100000" WHERE variable="version"'},
+        qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'},
+    );
+}
+
 =head1 NAME
 
 run_tests.pl - Script to run Koha test files
@@ -357,6 +370,11 @@ Only run the selenium tests.
 =item B<--run-cypress-tests-only>
 
 Only run the cypress tests.
+
+=item B<--run-db-upgrade-only>
+
+Only run DB upgrade process.
+It will inject a dump from v19.11.00, updatedatabase, then rerun it from 21.11.00.
 
 =item B<--with-coverage>
 
