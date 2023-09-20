@@ -276,18 +276,34 @@ sub insert_acquisition_data {
 
     C4::Context->set_preference( ( $VERSION < 201200004 ) ? 'gist' : 'TaxRates', '0|0.12|0.1965');
 
-    my $vendor = $builder->build({ source => 'Aqbookseller', value => {
-                       name => 'My Vendor',
-                     active => 1,
-                  listprice => 'USD',
-               invoiceprice => 'USD',
-                     gstreg => 0,
-                 listincgst => 0,
-              invoiceincgst => 0,
-                   tax_rate => 0.1965,
-                   discount => 10,
-               deliverytime => 3,
-    }});
+    my $vendor = $builder->build(
+        {
+            source => 'Aqbookseller',
+            value  => {
+                name          => 'My Vendor',
+                active        => 1,
+                listprice     => 'USD',
+                invoiceprice  => 'USD',
+                gstreg        => 0,
+                listincgst    => 0,
+                invoiceincgst => 0,
+                tax_rate      => 0.1965,
+                discount      => 10,
+                deliverytime  => 3,
+                name          => 'My Vendor',
+                address1      => '6897 Library Rd',
+                address2      => 'Springfield, MA 44224',
+                address3      => undef,
+                address4      => undef,
+                phone         => '555-555-5555',
+                accountnumber => '69823',
+                ( $VERSION >= 220600036 ? ( type => 'Print books' ) : () ),
+                notes  => 'Sample vendor',
+                postal => '567 Main St. PO Box 25 Springfield, MA 44224',
+                fax    => '555-555-9999',
+            }
+        }
+    );
 
     my $basket = $builder->build({ source => 'Aqbasket', value => {
                  basketname => 'My Basket',
