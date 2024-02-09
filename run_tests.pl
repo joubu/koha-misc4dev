@@ -34,6 +34,7 @@ my (
     $run_all_tests,          $run_light_test_suite,
     $run_elastic_tests_only, $run_selenium_tests_only,
     $run_cypress_tests_only, $run_db_upgrade_only,
+    $run_only,
 );
 GetOptions(
     'h|help'                  => \$help,
@@ -56,6 +57,7 @@ GetOptions(
     'run-cypress-tests-only'  => \$run_cypress_tests_only,
     'run-selenium-tests-only' => \$run_selenium_tests_only,
     'run-db-upgrade-only'     => \$run_db_upgrade_only,
+    'run-only=s'              => \$run_only,
 ) || pod2usage(1);
 
 pod2usage( -verbose => 2 ) if $help;
@@ -66,7 +68,8 @@ pod2usage("One and only one run-* parameters must be provided")
   xor $run_elastic_tests_only
   xor $run_selenium_tests_only
   xor $run_cypress_tests_only
-  xor $run_db_upgrade_only;
+  xor $run_db_upgrade_only
+  xor $run_only;
 
 pod2usage("Coverage can only be generated if --run-all-tests is passed")
   if $with_coverage && !$run_all_tests;
@@ -173,6 +176,9 @@ elsif ($run_elastic_tests_only) {
 }
 elsif ($run_all_tests) {
     @prove_files = map { chomp ; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
+} elsif ($run_only) {
+    push @commands, get_commands_to_reset_db();
+    @prove_files = ('t/db_dependent/selenium/01-installation.t', $run_only);
 }
 
 if ( $with_coverage ) {
@@ -375,6 +381,11 @@ Only run the cypress tests.
 
 Only run DB upgrade process.
 It will inject a dump from v19.11.00, updatedatabase, then rerun it from 21.11.00.
+
+=item B<--run-only>
+
+Run only one (Perl) test file, like if you were Jenkins.
+It will drop and recreate the DB, run t/db_dependent/selenium/01-installation.t and your beloved tests.
 
 =item B<--with-coverage>
 
