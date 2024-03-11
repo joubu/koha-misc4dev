@@ -289,7 +289,7 @@ run_tests.pl - Script to run Koha test files
 
 =head1 SYNOPSIS
 
-./run_tests.pl --instance=kohadev --db-password=password --koha-dir=/kohadevbox/koha --intranet-base-url=http://koha:8081 --opac-base-url=http://koha:8080 --koha-user=koha --koha-pass=koha --node-path=/kohadevbox/node_modules --selenium-addr=selenium --selenium-port=4444 [--prove-cpus=4] [--run-all-tests --run-light-test-suite --run-elastic-tests-only --run-selenium-tests-only] [--with-coverage]
+./run_tests.pl --instance=kohadev --db-password=password --koha-dir=/kohadevbox/koha --intranet-base-url=http://koha:8081 --opac-base-url=http://koha:8080 --koha-user=koha --koha-pass=koha --node-path=/kohadevbox/node_modules --selenium-addr=selenium --selenium-port=4444 [--prove-cpus=4] [--run-all-tests --run-light-test-suite --run-elastic-tests-only --run-selenium-tests-only --run-only] [--with-coverage]
 
 =head1 DESCRIPTION
 
