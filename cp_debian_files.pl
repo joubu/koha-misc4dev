@@ -20,8 +20,7 @@ use File::Basename qw( dirname );
 use Getopt::Long;
 use IPC::Cmd qw( run );
 
-my $koha_dir   = '/home/vagrant/kohaclone';
-my $gitify_dir = '/home/vagrant/gitify';
+my ( $koha_dir, $gitify_dir );
 my $instance   = 'kohadev';
 
 GetOptions(
@@ -29,6 +28,9 @@ GetOptions(
     'gitify_dir=s' => \$gitify_dir,
     'instance=s'   => \$instance,
 );
+
+die "Missing mandatory option 'koha_dir'"   unless $koha_dir;
+die "Missing mandatory option 'gitify_dir'" unless $gitify_dir;
 
 my $koha_debian_dir = "$koha_dir/debian";
 
