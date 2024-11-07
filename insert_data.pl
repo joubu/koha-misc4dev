@@ -348,7 +348,12 @@ sub decrement_version {
 }
 
 sub configure_lang {
-    C4::Context->set_preference( 'language', 'en' );
+    if ( $VERSION < 240600027 ) {
+        C4::Context->set_preference( 'language', 'en' );
+    } else {
+        C4::Context->set_preference( 'StaffInterfaceLanguages', 'en' );
+    }
+
     C4::Context->set_preference( 'opaclanguages', 'en' );
 }
 
