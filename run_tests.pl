@@ -134,14 +134,16 @@ if ( $run_all_tests ) {
     push @commands, get_commands_to_reset_db();
 }
 
+my ( @prove_rules, @prove_opts, @prove_files);
+
 if ( $run_db_upgrade_only ) {
     push @commands, get_commands_to_reset_db();
     push @commands, get_commands_to_upgrade_db();
+} else {
+    @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
+    @prove_opts  = ( '--timer', '--harness=TAP::Harness::JUnit', '--recurse' );
+    @prove_files;
 }
-
-my @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
-my @prove_opts  = ( '--timer', '--harness=TAP::Harness::JUnit', '--recurse' );
-my @prove_files;
 
 if ($run_light_test_suite) {
     @prove_files = map { chomp ; $_ } qx{find t xt -name '*.t' \\
