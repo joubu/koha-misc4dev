@@ -34,6 +34,7 @@ my (
     $run_all_tests,          $run_light_test_suite,
     $run_elastic_tests_only, $run_selenium_tests_only,
     $run_cypress_tests_only, $run_db_upgrade_only,
+    $run_db_compare_only,    $compare_with,
     $run_only,
 );
 GetOptions(
@@ -57,6 +58,8 @@ GetOptions(
     'run-cypress-tests-only'  => \$run_cypress_tests_only,
     'run-selenium-tests-only' => \$run_selenium_tests_only,
     'run-db-upgrade-only'     => \$run_db_upgrade_only,
+    'run-db-compare-only'     => \$run_db_compare_only,
+    'compare-with=s'          => \$compare_with,
     'run-only=s'              => \$run_only,
 ) || pod2usage(1);
 
@@ -69,10 +72,14 @@ pod2usage("One and only one run-* parameters must be provided")
   xor $run_selenium_tests_only
   xor $run_cypress_tests_only
   xor $run_db_upgrade_only
+  xor $run_db_compare_only
   xor $run_only;
 
 pod2usage("Coverage can only be generated if --run-all-tests is passed")
   if $with_coverage && !$run_all_tests;
+
+pod2usage("Pass a commit id to compare with (--compare-with)")
+  if $run_db_compare_only && !$compare_with;
 
 $instance          ||= $ENV{KOHA_INSTANCE}     || 'kohadev';
 $db_password       ||= $ENV{KOHA_DB_PASSWORD}  || 'password';
@@ -139,10 +146,14 @@ my ( @prove_rules, @prove_opts, @prove_files);
 if ( $run_db_upgrade_only ) {
     push @commands, get_commands_to_reset_db();
     push @commands, get_commands_to_upgrade_db();
-} else {
+}
+elsif ( $run_db_compare_only ) {
+    push @commands, get_commands_to_reset_db();
+    push @commands, get_commands_to_compare_db();
+}
+else {
     @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
     @prove_opts  = ( '--timer', '--harness=TAP::Harness::JUnit', '--recurse' );
-    @prove_files;
 }
 
 if ($run_light_test_suite) {
@@ -210,11 +221,18 @@ if ( $run_all_tests || $run_cypress_tests_only ) {
 
 push @commands, qq{koha-shell $instance -c "touch testing.success"};
 
-for my $cmd ( @commands ) {
+sub run_cmd {
+    my ($cmd) = @_;
+
     my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     unless ($with_coverage) { # We want to generate coverage even if there are failures
         exit(1) unless $success; # FIXME Maybe we need to exit $error_code? Or at least deal with the different possible cases.
     }
+    return @$stdout_buf;
+}
+
+for my $cmd ( @commands ) {
+    run_cmd($cmd);
 }
 
 if ($with_coverage) {
@@ -282,6 +300,50 @@ sub get_commands_to_upgrade_db {
         qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'},
         qq{koha-mysql $instance -e 'UPDATE systempreferences SET value="21.1100000" WHERE variable="version"'},
         qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'},
+    );
+}
+
+sub get_commands_to_compare_db {
+    my $misc4dev_dir = dirname(__FILE__);
+
+    # Retrieve and set the syspref version
+    # Cannot be in the list of commands because of the complexity of the command
+    run_cmd qq{wget https://gitlab.com/koha-community/Koha/-/raw/$compare_with/Koha.pm -O /tmp/Koha.pm};
+    my ($version) = run_cmd qq{perl -I/tmp -MKoha -e 'print \$Koha::VERSION' | sed -E 's/\\.//2g'};
+
+    return (
+        # We fetch the kohastructure.sql remotely. We could eventually store one file per major version in misc4dev.
+        qq{wget https://gitlab.com/koha-community/Koha/-/raw/$compare_with/installer/data/mysql/kohastructure.sql -O /tmp/kohastructure.sql},
+
+        # Insert the old dump
+        qq{koha-mysql $instance < /tmp/kohastructure.sql},
+
+        # Set the version
+        qq{koha-mysql $instance -e 'INSERT INTO systempreferences(variable, value) VALUES ("version", "$version");'},
+
+        # Update the DB
+        qq{sudo koha-shell $instance -p -c 'perl ${koha_dir}/installer/data/mysql/updatedatabase.pl'},
+
+        # Generate schema files from the updated DB
+        qq{perl misc/devel/update_dbix_class_files.pl --koha-conf \$KOHA_CONF},
+
+        # show the diff or the output will be empty on error
+        qq{sudo koha-shell $instance -p -c 'git diff && git diff --quiet || { echo "ERROR - There is a diff in DBIC schema files" && exit 1; }'},
+
+        # Generate schema files from kohastructure.sql
+        qq{dbic},
+        qq{sudo koha-shell $instance -p -c 'git diff && git diff --quiet || { echo "ERROR - There is a diff in DBIC schema files" && exit 1; }'},
+
+        # Dump the updated DB
+        qq{sudo koha-dump --schema-only $instance},
+
+        # Clean unecessary lines for comparison
+        qq[sed -n '/-- Table structure/,/-- Dump completed/{//!p;}' /var/spool/koha/$instance/kohadev-schema-\$(date '+%Y-%m-%d').sql > /tmp/upgraded_db.sql],
+        qq[sed -n '/-- Table structure/,/-- Dump completed/{//!p;}' installer/data/mysql/kohastructure.sql > /tmp/current_db.sql],
+        qq[diff /tmp/current_db.sql /tmp/upgraded_db.sql && diff -q /tmp/current_db.sql /tmp/upgraded_db.sql || { echo "ERROR - DB structures are not identical" && exit 1; }],
+
+        # We are good! If we have not reached this line, CI should have failed
+        qq{echo "all good"},
     );
 }
 
@@ -383,6 +445,20 @@ Only run the cypress tests.
 
 Only run DB upgrade process.
 It will inject a dump from v19.11.00, updatedatabase, then rerun it from 21.11.00.
+
+=item B<--run-db-compare-only>
+
+Must be passed with --compare-with.
+Pull the DB structure for the version passed with --compare-with, inject it into the DB, update the DB, generate the DBIC schema files for this DB.
+Generate the DBIC schema files for the DB structure present on the current branch.
+Dump the update DB and compare with the DB structure from the current branch.
+
+If a diff is found during one of these steps, the script will exit with an error.
+
+=item B<--compare-with>
+
+To pass with --run-db-compare-only. Must be a commit id, branch or tag.
+Example: v24.05.00
 
 =item B<--run-only>
 
