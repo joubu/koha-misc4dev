@@ -311,6 +311,9 @@ sub get_commands_to_compare_db {
     run_cmd qq{wget https://gitlab.com/koha-community/Koha/-/raw/$compare_with/Koha.pm -O /tmp/Koha.pm};
     my ($version) = run_cmd qq{perl -I/tmp -MKoha -e 'print \$Koha::VERSION' | sed -E 's/\\.//2g'};
 
+    my $date = qx{date --iso-8601=seconds};
+    chomp $date;
+
     return (
         # We fetch the kohastructure.sql remotely. We could eventually store one file per major version in misc4dev.
         qq{wget https://gitlab.com/koha-community/Koha/-/raw/$compare_with/installer/data/mysql/kohastructure.sql -O /tmp/kohastructure.sql},
@@ -343,7 +346,8 @@ sub get_commands_to_compare_db {
         qq[diff /tmp/current_db.sql /tmp/upgraded_db.sql && diff -q /tmp/current_db.sql /tmp/upgraded_db.sql || { echo "ERROR - DB structures are not identical" && exit 1; }],
 
         # We are good! If we have not reached this line, CI should have failed
-        qq{echo "all good"},
+        qq{echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Compare DB run" time="0.0000" tests="1" failures="0"><testsuite name="Root Suite" timestamp="$date" tests="1" file="" time="0.0000" failures="0"><testcase name="All tests passed"/></testsuite></testsuites>' > junit-db-compare.xml;},
+
     );
 }
 
