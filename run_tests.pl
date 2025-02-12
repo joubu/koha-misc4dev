@@ -152,7 +152,7 @@ elsif ( $run_db_compare_only ) {
     push @commands, get_commands_to_compare_db();
 }
 else {
-    @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'seq=t/db_dependent/**.t' );
+    @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'par=xt/tt_tidy.t', 'seq=t/db_dependent/**.t' );
     @prove_opts  = ( '--timer', '--harness=TAP::Harness::JUnit', '--recurse' );
 }
 
