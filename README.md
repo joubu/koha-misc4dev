@@ -88,4 +88,55 @@ To generate a graph, copy and paste the "Average" section into a spreadsheet pro
 
 You can take a look at my generated graph in `benchmark_data/Joubu/results.ods`
 
+## How are sql files generated?
 
+This scripts load the default sample data from the Koha codebase. Bibliographic and authority records
+are loaded from `data/sql`. This directory will be traversed from higer Koha version to lower.
+
+This files need to be regenerated every time the relevant tables get their structure changed. This doesn't
+happen too often. The tables are:
+
+* `auth_header`
+* `biblio_metadata`
+* `biblio`
+* `biblioitems`
+* `items`
+
+NOTE: for all steps, they need to be repeated for both *marc21* and *unimarc* flavours. In the examples
+we only use *marc21*.
+
+If bug `XXX` introduces a change in one of those tables you need to follow this steps:
+
+1. Does the current major version have a specific dir? (for example, if Koha.pm says *24.12.00.013*, then
+   the major version is *2412*) If there isn't a directory it needs to be created: `mkdir -p sql/data/marc21/2412`.
+2. Once we identified the directory, we need to create a new directory named `after_XXX`.
+3. Copy all the `.sql` files from the closest prior version.
+4. Regenerate `auth_header.sql` (the only modified one in our example)
+5. Repeat for *unimarc*
+6. Adapt `insert_data.pl` to handle this new use case.
+
+### Generating the updated SQL
+
+Following with our example, the first thing to do is to load `KTD` in the commit prior to the change:
+
+```shell
+git checkout <commit id>
+ktd up -d
+```
+
+Now update the DB (with the sample data in it):
+
+```shell
+git reset --hard origin/main
+ktd --shell
+updatedatabase
+```
+
+Now we need to export the table:
+
+```shell
+mysqldump -ppassword -uroot -hdb -c --skip-lock-tables koha_kohadev auth_header > auth_header.sql
+```
+
+This file will contain some SQL comments. Clean it all. Then move this file into your `koha-misc4dev`
+working directory. And repeat for the next `KOHA_MARC_FLAVOUR`.
