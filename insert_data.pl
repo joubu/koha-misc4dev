@@ -55,20 +55,35 @@ my $version_data_directory = $major_version;
 our @records_files;
 my $has_biblio_metadata = ($VERSION >= "161200004") ? 1 : 0;
 
-while ( not -d $sql_files_dir ) { # FIXME Hum... that smells wrong
-    $version_data_directory = decrement_version($version_data_directory);
+my $found_directory;
 
-    $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory";
-    if ( $version_data_directory >= 1611 ) {
-        if ( $version_data_directory == 1611 ) {
-            if ( $VERSION >= "161200004" ) { # After 17196 removing of biblioitems.marcxml
-                $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory/after_17196";
-            }
-        }
-    }
-    if ( $version_data_directory eq 1812 and
-         $VERSION >= "181200011" ) {
-        $sql_files_dir = "$sql_dir/$lc_marcflavour/$version_data_directory/after_22155";
+# This loop will start with a dir named "$sql_dir/$lc_marcflavour/$major_version"
+# look for subdirs for specific dbrevs, then check if the top-level $major_version
+# dir contains biblio.sql, if it doesn't it will decrement and retry
+while ( !$found_directory ) {
+
+    # latest first, if no match, we decrement version and retry
+    if (    $version_data_directory eq 2412
+        and $VERSION >= "241200012" ) {
+        $sql_files_dir   = "$sql_dir/$lc_marcflavour/$version_data_directory/after_26684";
+        $found_directory = 1;
+    } elsif ( $version_data_directory eq 1812
+        and $VERSION >= "181200011" )
+    {
+        $sql_files_dir   = "$sql_dir/$lc_marcflavour/$version_data_directory/after_22155";
+        $found_directory = 1;
+    } elsif ( $version_data_directory eq 1611
+        and $VERSION >= "161200004" )
+    {    # After 17196 removing of biblioitems.marcxml
+        $sql_files_dir   = "$sql_dir/$lc_marcflavour/$version_data_directory/after_17196";
+        $found_directory = 1;
+    } elsif ( -f "$sql_files_dir/biblio.sql" ) {
+
+        # the current dir contains valid sql files.
+        $found_directory = 1;
+    } else {
+        $version_data_directory = decrement_version($version_data_directory);
+        $sql_files_dir          = "$sql_dir/$lc_marcflavour/$version_data_directory";
     }
 }
 
