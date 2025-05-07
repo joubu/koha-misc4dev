@@ -161,7 +161,12 @@ if ($run_light_test_suite) {
                     -not -path "t/db_dependent/www/*" \\
                     -not -path "t/db_dependent/selenium/*" \\
                     -not -path "t/db_dependent/Koha/SearchEngine/Elasticsearch/*" \\
-                    -not -path "t/db_dependent/Koha/SearchEngine/*" };
+                    -not -path "t/db_dependent/Koha/SearchEngine/*" \\
+                    -not -path "xt/vue_tidy.t" \\
+                    -not -path "xt/perltidy.t" \\
+                    -not -path "xt/js_tidy.t" \\
+                    -not -path "xt/author/codespell.t" \\
+                    -not -path "xt/pl_valid.t" };
     push @prove_opts, '--shuffle';
 }
 elsif ($run_selenium_tests_only) {
