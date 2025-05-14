@@ -141,7 +141,7 @@ if ( $run_all_tests ) {
     push @commands, get_commands_to_reset_db();
 }
 
-my ( @prove_rules, @prove_opts, @prove_files);
+my ( @prove_rules, @prove_opts, @prove_files, @cypress_files );
 
 if ( $run_db_upgrade_only ) {
     push @commands, get_commands_to_reset_db();
@@ -194,9 +194,18 @@ elsif ($run_elastic_tests_only) {
 }
 elsif ($run_all_tests) {
     @prove_files = map { chomp ; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
-} elsif ($run_only) {
+}
+elsif ($run_only) {
     push @commands, get_commands_to_reset_db();
-    @prove_files = ('t/db_dependent/selenium/01-installation.t', $run_only);
+    @prove_files = ('t/db_dependent/selenium/01-installation.t');
+    if ( $run_only =~ m{\.ts$} ) {
+        # It is a cypress test
+        push @cypress_files, $run_only;
+    }
+    else {
+        # Assuming it is a perl test
+        push @prove_files, $run_only;
+    }
 }
 
 if ( $with_coverage ) {
@@ -215,11 +224,15 @@ if ( @prove_files ) {
     );
 }
 
-if ( $run_all_tests || $run_cypress_tests_only ) {
+if (   $run_all_tests
+    || $run_cypress_tests_only
+    || ( $run_only && @cypress_files ) )
+{
     push @commands,
       build_cypress_command(
         {
-            env => $env,
+            env        => $env,
+            spec_files => \@cypress_files,
         }
       );
 }
@@ -277,15 +290,28 @@ sub generate_junit_failure {
 }
 
 sub build_cypress_command {
-    my ($params) = @_;
-    my $env = $params->{env};
-    return
-        qq{koha-shell $instance -c "}
-      . join( ' ', map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) } keys %$env )
+    my ($params)   = @_;
+    my $env        = $params->{env};
+    my $spec_files = $params->{spec_files};
+    return qq{koha-shell $instance -c "}
+      . join( ' ',
+        map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) }
+          keys %$env )
       . ' '
-      . sprintf ( q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'}, $env->{KOHA_USER}, $env->{KOHA_PASS} )
+      . sprintf(
+        q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true' %s},
+        $env->{KOHA_USER},
+        $env->{KOHA_PASS},
+        (
+            $spec_files && @$spec_files
+            ? sprintf( q{--spec } . join( q{ --spec }, @$spec_files ) )
+            : q{}
+        )
+      )
       . q{";}
-      . sprintf q{err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then } . generate_junit_failure() . q{ else echo "Cypress returned error code '$err'"; fi; exit $err; }
+      . sprintf q{err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then }
+      . generate_junit_failure()
+      . q{ else echo "Cypress returned error code '$err'"; fi; exit $err; };
 }
 
 sub get_commands_to_reset_db {
