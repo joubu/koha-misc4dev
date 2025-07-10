@@ -66,7 +66,7 @@ foreach my $debian_file ( keys %{ $system_files_mapping } ) {
     run( command => $cmd, verbose => 1 );
 }
 
-run( command => "sudo xsltproc --output /usr/share/man/man8/ /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $koha_debian_dir/docs/*.xml", verbose => 1 );
+run( command => "sudo xsltproc --output /usr/share/man/man8/ /usr/share/xml/docbook/stylesheet/docbook-xsl-ns/manpages/docbook.xsl $koha_debian_dir/docs/*.xml", verbose => 1 );
 run( command => "sudo rm /usr/share/man/man8/koha-*.8.gz", verbose => 1 );
 run( command => "sudo gzip /usr/share/man/man8/koha-*.8", verbose => 1 );
 
