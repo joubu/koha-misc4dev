@@ -107,6 +107,10 @@ unless ( $use_existing_db ) {
     ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     exit(1) unless $success;
 
+    $cmd = qq|koha-mysql $instance -e 'UPDATE systempreferences SET value="1" WHERE variable="RESTBasicAuth"'|;
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+
     # Insert the custom SQL queries if shared/custom.sql exists
     if ( -f "$shared_dir/custom.sql" ) {
         $cmd = "sudo koha-mysql $instance < $shared_dir/custom.sql";
