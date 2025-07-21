@@ -35,7 +35,7 @@ if ( -f $koha_dir . '/debian/templates/plack.psgi' ) {
     `sudo perl -p -i -e s#/usr/share/koha/intranet/cgi-bin#$koha_dir# /etc/koha/sites/$instance/plack.psgi`;
     `sudo perl -p -i -e s#/usr/share/koha/lib#$koha_dir# /etc/koha/sites/$instance/plack.psgi`;
     `sudo perl -p -i -e s#/usr/share/koha/opac/cgi-bin/opac#$koha_dir/opac# /etc/koha/sites/$instance/plack.psgi`;
-    `sudo koha-plack --restart $instance`;
+    `sudo koha-plack --restart --development $instance`;
 }
 
 exit(0);
