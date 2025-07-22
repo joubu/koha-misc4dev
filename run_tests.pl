@@ -197,6 +197,7 @@ elsif ($run_all_tests) {
 }
 elsif ($run_only) {
     push @commands, get_commands_to_reset_db();
+    push @commands, qq{koha-mysql $instance -e 'UPDATE systempreferences SET value="1" WHERE variable="RESTBasicAuth"'};
     @prove_files = ('t/db_dependent/selenium/01-installation.t');
     if ( $run_only =~ m{\.ts$} ) {
         # It is a cypress test
