@@ -294,26 +294,60 @@ sub generate_junit_failure {
 sub build_cypress_command {
     my ($params)   = @_;
     my $env        = $params->{env};
-    my $spec_files = $params->{spec_files};
-    return qq{koha-shell $instance -c "}
-      . join( ' ',
-        map { $_ . '=' . ( defined $env->{$_} ? $env->{$_} : q{} ) }
-          keys %$env )
-      . ' '
-      . sprintf(
-        q{yarn cypress run --config video=false,screenshotOnRunFailure=false --env KOHA_USER=%s,KOHA_PASS=%s --reporter junit --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true' %s},
-        $env->{KOHA_USER},
-        $env->{KOHA_PASS},
-        (
-            $spec_files && @$spec_files
-            ? sprintf( q{--spec } . join( q{ --spec }, @$spec_files ) )
-            : q{}
-        )
-      )
-      . q{";}
-      . sprintf q{err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then }
+    my $spec_files = $params->{spec_files} || [];
+
+    my ( @e2e_tests, @component_tests );
+    if (@$spec_files) {
+        @e2e_tests = grep { $_ =~ m{^t/cypress/integration} } @$spec_files;
+    }
+    else {
+        @component_tests = grep { $_ =~ m{^t/cypress/component} } @$spec_files;
+    }
+
+    my $cmd = qq{koha-shell $instance -c "} . join(
+        "\n",
+        map {
+            sprintf "export %s=%s;", $_,
+              ( defined $env->{$_} ? $env->{$_} : q{} )
+          }
+          keys %$env
+    ) . "\n";
+
+    my $cypress_options = sprintf q{\
+        --config video=false,screenshotOnRunFailure=false \
+        --env KOHA_USER=%s,KOHA_PASS=%s \
+        --reporter junit \
+        --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'},
+      $env->{KOHA_USER}, $env->{KOHA_PASS};
+
+    if ( !@$spec_files || @e2e_tests ) {
+        $cmd .= sprintf(
+            qq{yarn cypress run $cypress_options %s;\n},
+            (
+                @e2e_tests
+                ? sprintf( q{--spec } . join( q{ --spec }, @e2e_tests ) )
+                : q{}
+            )
+        );
+    }
+    if ( -d 't/cypress/component' && ( !@$spec_files || @component_tests ) ) {
+        $cmd .= sprintf(
+            qq{yarn cypress run --component $cypress_options %s;\n},
+            (
+                @component_tests
+                ? sprintf( q{--spec } . join( q{ --spec }, @component_tests ) )
+                : q{}
+            )
+        );
+    }
+
+    $cmd .= q{";};
+
+    $cmd .=
+      sprintf q{err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then }
       . generate_junit_failure()
       . q{ else echo "Cypress returned error code '$err'"; fi; exit $err; };
+    return $cmd;
 }
 
 sub get_commands_to_reset_db {
