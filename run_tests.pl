@@ -25,17 +25,17 @@ use Pod::Usage;
 
 our ( $instance, $db_password );
 my (
-    $help,                   $koha_dir,
-    $intranet_base_url,      $opac_base_url,
-    $koha_user,              $koha_pass,
-    $env_path,               $node_path,
-    $selenium_addr,          $selenium_port,
-    $prove_cpus,             $with_coverage,
-    $run_all_tests,          $run_light_test_suite,
-    $run_elastic_tests_only, $run_selenium_tests_only,
-    $run_cypress_tests_only, $run_db_upgrade_only,
-    $run_db_compare_only,    $compare_with,
-    $run_only,
+    $help,                    $koha_dir,
+    $intranet_base_url,       $opac_base_url,
+    $koha_user,               $koha_pass,
+    $env_path,                $node_path,
+    $selenium_addr,           $selenium_port,
+    $prove_cpus,              $with_coverage,
+    $run_all_tests,           $run_all_perl_tests,
+    $run_light_test_suite,    $run_elastic_tests_only,
+    $run_selenium_tests_only, $run_cypress_tests_only,
+    $run_db_upgrade_only,     $run_db_compare_only,
+    $compare_with,            $run_only,
 );
 GetOptions(
     'h|help'                  => \$help,
@@ -53,6 +53,7 @@ GetOptions(
     'prove-cpus=s'            => \$prove_cpus,
     'with-coverage'           => \$with_coverage,
     'run-all-tests'           => \$run_all_tests,
+    'run-all-perl-tests'      => \$run_all_perl_tests,
     'run-light-test-suite'    => \$run_light_test_suite,
     'run-elastic-tests-only'  => \$run_elastic_tests_only,
     'run-cypress-tests-only'  => \$run_cypress_tests_only,
@@ -68,6 +69,7 @@ pod2usage( -verbose => 2 ) if $help;
 pod2usage("One and only one run-* parameters must be provided")
   unless  $run_all_tests
   xor $run_light_test_suite
+  xor $run_all_perl_tests
   xor $run_elastic_tests_only
   xor $run_selenium_tests_only
   xor $run_cypress_tests_only
@@ -76,7 +78,7 @@ pod2usage("One and only one run-* parameters must be provided")
   xor $run_only;
 
 pod2usage("Coverage can only be generated if --run-all-tests is passed")
-  if $with_coverage && !$run_all_tests;
+  if $with_coverage && !$run_all_tests && !$run_all_perl_tests;
 
 pod2usage("Pass a commit id to compare with (--compare-with)")
   if $run_db_compare_only && !$compare_with;
@@ -122,7 +124,7 @@ if ($with_coverage) {
     push @commands, q{rm -rf cover_db};
 }
 
-if ( $run_all_tests || $run_selenium_tests_only ) {
+if ( $run_all_tests || $run_all_perl_tests || $run_selenium_tests_only ) {
     push @commands, get_commands_to_reset_db();
 
     push @commands,
@@ -136,7 +138,7 @@ if ( $run_all_tests || $run_selenium_tests_only ) {
     push @commands, get_commands_to_reset_db();
 }
 
-if ( $run_all_tests ) {
+if ( $run_all_tests || $run_all_perl_tests ) {
     push @commands, get_commands_to_upgrade_db();
     push @commands, get_commands_to_reset_db();
 }
@@ -192,8 +194,8 @@ elsif ($run_elastic_tests_only) {
 
     @prove_rules = ('par=**');
 }
-elsif ($run_all_tests) {
-    @prove_files = map { chomp ; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
+elsif ( $run_all_tests || $run_all_perl_tests ) {
+    @prove_files = map { chomp; $_ } qx{ ( find t/db_dependent/selenium -name '*.t' -not -name '00-onboarding.t' | sort ) ; ( find t xt -name '*.t' -not -path "t/db_dependent/selenium/*" | shuf ) };
 }
 elsif ($run_only) {
     push @commands, get_commands_to_reset_db();
@@ -424,7 +426,7 @@ run_tests.pl - Script to run Koha test files
 
 =head1 SYNOPSIS
 
-./run_tests.pl --instance=kohadev --db-password=password --koha-dir=/kohadevbox/koha --intranet-base-url=http://koha:8081 --opac-base-url=http://koha:8080 --koha-user=koha --koha-pass=koha --node-path=/kohadevbox/node_modules --selenium-addr=selenium --selenium-port=4444 [--prove-cpus=4] [--run-all-tests --run-light-test-suite --run-elastic-tests-only --run-selenium-tests-only --run-only] [--with-coverage]
+./run_tests.pl --instance=kohadev --db-password=password --koha-dir=/kohadevbox/koha --intranet-base-url=http://koha:8081 --opac-base-url=http://koha:8080 --koha-user=koha --koha-pass=koha --node-path=/kohadevbox/node_modules --selenium-addr=selenium --selenium-port=4444 [--prove-cpus=4] [--run-all-tests --run-all-perl-tests --run-light-test-suite --run-elastic-tests-only --run-selenium-tests-only --run-only] [--with-coverage]
 
 =head1 DESCRIPTION
 
@@ -495,6 +497,12 @@ Can be set using KOHA_INSTANCE.
 =item B<--run-all-tests>
 
 Run all the tests!
+
+=item B<--run-all-perl-tests>
+
+Run all the Perl tests (including Selenium)!
+
+Cypress tests will not be run.
 
 =item B<--run-light-test-suite>
 
