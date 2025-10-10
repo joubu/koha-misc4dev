@@ -36,6 +36,10 @@ my (
     $run_selenium_tests_only, $run_cypress_tests_only,
     $run_db_upgrade_only,     $run_db_compare_only,
     $compare_with,            $run_only,
+    $ci_incremental_runs,
+    $ci_incremental_runs_token,
+    $ci_incremental_runs_report,
+    $ci_incremental_runs_repo_url,
 );
 GetOptions(
     'h|help'                  => \$help,
@@ -96,6 +100,10 @@ $selenium_addr     ||= $ENV{SELENIUM_ADDR}     || 'selenium';
 $selenium_port     ||= $ENV{SELENIUM_PORT}     || 4444;
 $prove_cpus        ||= $ENV{KOHA_PROVE_CPUS};
 $with_coverage     ||= $ENV{COVERAGE}          || 0;
+$ci_incremental_runs          ||= $ENV{KOHA_CI_INCREMENTAL_RUNS}         || '';
+$ci_incremental_runs_token    ||= $ENV{KOHA_CI_INCREMENTAL_RUNS_TOKEN}   || '';
+$ci_incremental_runs_report   ||= $ENV{KOHA_CI_INCREMENTAL_RUNS_REPORT}  || '';
+$ci_incremental_runs_repo_url ||= $ENV{KOHA_CI_INCREMENTAL_RUN_REPO_URL} || '';
 
 my $create_success_file = exists $ENV{RUN_TESTS_AND_EXIT} && $ENV{RUN_TESTS_AND_EXIT} eq 'yes';
 
@@ -103,17 +111,21 @@ pod2usage("Cannot run tests, koha-dir does not seem to be a Koha src directory")
     unless -f "$koha_dir/Koha.pm";
 
 my $env = {
-    KOHA_TESTING        => 1,
-    KOHA_NO_TABLE_LOCKS => 1,
-    KOHA_INTRANET_URL   => $intranet_base_url,
-    KOHA_OPAC_URL       => $opac_base_url,
-    KOHA_USER           => $koha_user,
-    KOHA_PASS           => $koha_pass,
-    PATH                => $env_path,
-    NODE_PATH           => $node_path,
-    SELENIUM_ADDR       => $selenium_addr,
-    SELENIUM_PORT       => $selenium_port,
-    JUNIT_OUTPUT_FILE   => q{junit_main.xml},
+    KOHA_TESTING                     => 1,
+    KOHA_CI_INCREMENTAL_RUNS         => $ci_incremental_runs,
+    KOHA_CI_INCREMENTAL_RUNS_TOKEN   => $ci_incremental_runs_token,
+    KOHA_CI_INCREMENTAL_RUNS_REPORT  => $ci_incremental_runs_report,
+    KOHA_CI_INCREMENTAL_RUN_REPO_URL => $ci_incremental_runs_repo_url,
+    KOHA_NO_TABLE_LOCKS              => 1,
+    KOHA_INTRANET_URL                => $intranet_base_url,
+    KOHA_OPAC_URL                    => $opac_base_url,
+    KOHA_USER                        => $koha_user,
+    KOHA_PASS                        => $koha_pass,
+    PATH                             => $env_path,
+    NODE_PATH                        => $node_path,
+    SELENIUM_ADDR                    => $selenium_addr,
+    SELENIUM_PORT                    => $selenium_port,
+    JUNIT_OUTPUT_FILE                => q{junit_main.xml},
 };
 
 $CWD = $koha_dir;
