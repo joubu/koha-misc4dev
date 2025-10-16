@@ -205,14 +205,47 @@ sub insert_default_circ_rule {
 }
 
 sub configure_selfreg {
-    C4::Context->set_preference('PatronSelfRegistration', 1);
-    C4::Context->set_preference('PatronSelfRegistrationDefaultCategory', 'SELFREG');
+    C4::Context->set_preference( 'PatronSelfRegistration', 1 );
+    C4::Context->set_preference( 'PatronSelfRegistrationDefaultCategory', 'SELFREG' );
     my $dbh = C4::Context->dbh;
-    $dbh->do(q|INSERT INTO categories ( categorycode, description, enrolmentperiod, enrolmentfee, reservefee, hidelostitems, category_type
-    | . ( $VERSION >= '31700004' ? ', default_privacy' : '' ) . q|
-    ) VALUES ( 'SELFREG', 'Self registration', 99, 0, 0, 0, 'A'
-    | . ( $VERSION >= '31700004' ? ', "default"' : '' ) . q|
-    )|);
+
+    # Dynamically check if reservefee column exists
+    my $has_reservefee = $dbh->selectrow_array(
+        q|SELECT COUNT(*) FROM information_schema.COLUMNS
+          WHERE TABLE_NAME='categories' AND COLUMN_NAME='reservefee'|
+    );
+
+    my $sql = q|
+        INSERT INTO categories (
+            categorycode,
+            description,
+            enrolmentperiod,
+            enrolmentfee,|;
+
+    $sql .= " reservefee," if $has_reservefee;
+
+    $sql .= q| hidelostitems,
+            category_type|;
+
+    $sql .= ", default_privacy" if $VERSION && $VERSION >= '31700004';
+
+    $sql .= q| )
+        VALUES (
+            'SELFREG',
+            'Self registration',
+            99,
+            0,|;
+
+    $sql .= " 0," if $has_reservefee;
+
+    $sql .= q| 0,
+            'A'|;
+
+    $sql .= ", 'default'" if $VERSION && $VERSION >= '31700004';
+
+    $sql .= q| )|;
+
+    $dbh->do($sql);
 }
 
 sub configure_selfcheckout {
