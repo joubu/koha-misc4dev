@@ -245,7 +245,7 @@ if (   $run_all_tests
     push @commands, qq{koha-mysql $instance -e 'UPDATE systempreferences SET value="1" WHERE variable="RESTBasicAuth"'};
     push @commands, q{flush_memcached};
     push @commands,
-      build_cypress_command(
+      build_cypress_commands(
         {
             env        => $env,
             spec_files => \@cypress_files,
@@ -265,8 +265,13 @@ sub run_cmd {
     return @$stdout_buf;
 }
 
+my $status = 0;
 for my $cmd ( @commands ) {
-    run_cmd($cmd);
+    my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    if ( $error_code ) {
+        warn "Previous command in error: $error_code";
+        $status = $error_code;
+    }
 }
 
 if ($with_coverage) {
@@ -280,6 +285,8 @@ if ($with_coverage) {
           run( command => $cmd, verbose => 1 );
     }
 }
+
+exit $status;
 
 sub build_prove_command {
     my ($params)   = @_;
@@ -305,7 +312,7 @@ sub generate_junit_failure {
     return qq{ echo '<?xml version="1.0" encoding="UTF-8"?><testsuites name="Cypress run" time="0.0000" tests="1" failures="1"><testsuite name="Root Suite" timestamp="$date" tests="0" file="" time="0.0000" failures="1"><testcase name="Executable not found"><failure message="Cypress executable not found." type="AssertionError">Cypress executable not found!</failure></testcase></testsuite></testsuites>' > junit-cypress-exec.xml;};
 }
 
-sub build_cypress_command {
+sub build_cypress_commands {
     my ($params)   = @_;
     my $env        = $params->{env};
     my $spec_files = $params->{spec_files} || [];
@@ -318,11 +325,13 @@ sub build_cypress_command {
         @component_tests = grep { $_ =~ m{^t/cypress/component} } @$spec_files;
     }
 
-    my $cmd = qq{koha-shell $instance -c "} . join(
+    my @commands;
+
+    my $start_cmd = qq{koha-shell $instance -c "} . join(
         "\n",
         map {
             sprintf "export %s=%s;", $_,
-              ( defined $env->{$_} ? $env->{$_} : q{} )
+              ( defined $env->{$_} ? $env->{$_} =~ s|"|\\"|gr : q{} )
           }
           keys %$env
     ) . "\n";
@@ -334,34 +343,41 @@ sub build_cypress_command {
         --reporter-options 'mochaFile=junit-cypress-[hash].xml,toConsole=true'},
       $env->{KOHA_USER}, $env->{KOHA_PASS};
 
+    my $end_cmd =
+      sprintf q{"; err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then }
+      . generate_junit_failure()
+      . q{ else echo "Cypress returned error code '$err'"; fi; exit $err; };
+
     if ( !@$spec_files || @e2e_tests ) {
-        $cmd .= sprintf(
-            qq{yarn cypress run $cypress_options %s;\n},
+        my $e2e_cmd = sprintf(
+            qq{%s yarn cypress run %s %s;%s},
+            $start_cmd,
+            $cypress_options,
             (
                 @e2e_tests
                 ? sprintf( q{--spec } . join( q{ --spec }, @e2e_tests ) )
                 : q{}
-            )
+            ),
+            $end_cmd,
         );
+        push @commands, $e2e_cmd;
     }
     if ( -d 't/cypress/component' && ( !@$spec_files || @component_tests ) ) {
-        $cmd .= sprintf(
-            qq{yarn cypress run --component $cypress_options %s;\n},
+        my $component_cmd = sprintf(
+            qq{%s yarn cypress run --component %s %s;%s},
+            $start_cmd,
+            $cypress_options,
             (
                 @component_tests
                 ? sprintf( q{--spec } . join( q{ --spec }, @component_tests ) )
                 : q{}
-            )
+            ),
+            $end_cmd,
         );
+        push @commands, $component_cmd;
     }
 
-    $cmd .= q{";};
-
-    $cmd .=
-      sprintf q{err=$?; if [ $err -eq 0 ]; then echo all good; elif [ $err -eq 127 ]; then }
-      . generate_junit_failure()
-      . q{ else echo "Cypress returned error code '$err'"; fi; exit $err; };
-    return $cmd;
+    return @commands;
 }
 
 sub get_commands_to_reset_db {
