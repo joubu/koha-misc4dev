@@ -258,19 +258,19 @@ push @commands, qq{koha-shell $instance -c "touch testing.success"};
 sub run_cmd {
     my ($cmd) = @_;
 
-    my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    my ( $success, $error_message, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
     unless ($with_coverage) { # We want to generate coverage even if there are failures
-        exit(1) unless $success; # FIXME Maybe we need to exit $error_code? Or at least deal with the different possible cases.
+        die $error_message unless $success;
     }
     return @$stdout_buf;
 }
 
-my $status = 0;
+my $error = 0;
 for my $cmd ( @commands ) {
-    my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-    if ( $error_code ) {
-        warn "Previous command in error: $error_code";
-        $status = $error_code;
+    my ( $success, $error_message, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    unless ( $success ) {
+        warn "Previous command in error: $error_message";
+        $error = $error_message;
     }
 }
 
@@ -281,12 +281,11 @@ if ($with_coverage) {
         q{cover -report clover}
     );
     for my $cmd (@coverage_commands) {
-        my ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) =
-          run( command => $cmd, verbose => 1 );
+        run( command => $cmd, verbose => 1 );
     }
 }
 
-exit $status;
+$error && die $error;
 
 sub build_prove_command {
     my ($params)   = @_;
