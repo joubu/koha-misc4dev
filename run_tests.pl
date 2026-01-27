@@ -228,6 +228,30 @@ if ( $with_coverage ) {
 }
 
 if ( @prove_files ) {
+    my $found = 0;
+    for ( my $i = 0 ; $i < @prove_files ; $i++ ) {
+        if ( $prove_files[$i] eq 't/db_dependent/selenium/01-installation.t' ) {
+            splice( @prove_files, $i, 1 );
+            $found = 1;
+            last;
+        }
+    }
+    if ($found) {
+        push @commands,
+          {
+            command => build_prove_command(
+                {
+                    env         => $env,
+                    prove_cpus  => $prove_cpus,
+                    prove_rules => \@prove_rules,
+                    prove_opts  => \@prove_opts,
+                    prove_files => ['t/db_dependent/selenium/01-installation.t'],
+                }
+            ),
+            abort_on_failure => 1
+          };
+    }
+
     push @commands, build_prove_command(
         {
             env                 => $env,
@@ -267,9 +291,19 @@ sub run_cmd {
 }
 
 my $error = 0;
-for my $cmd ( @commands ) {
-    my ( $success, $error_message, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
-    unless ( $success ) {
+for my $cmd (@commands) {
+    my $command = $cmd;
+    my $abort_on_failure;
+    if ( ref($cmd) && ref($cmd) eq 'HASH' ) {
+        $command          = $cmd->{command};
+        $abort_on_failure = $cmd->{abort_on_failure};
+    }
+    my ( $success, $error_message, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $command, verbose => 1 );
+    unless ($success) {
+        if ($abort_on_failure) {
+            die $error_message unless $success;
+        }
+
         warn "Previous command in error: $error_message";
         $error = $error_message;
     }
