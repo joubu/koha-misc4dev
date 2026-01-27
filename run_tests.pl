@@ -126,6 +126,7 @@ my $env = {
     SELENIUM_ADDR                    => $selenium_addr,
     SELENIUM_PORT                    => $selenium_port,
     JUNIT_OUTPUT_FILE                => q{junit_main.xml},
+    DISABLE_V8_COMPILE_CACHE         => 1,
 };
 
 $CWD = $koha_dir;
