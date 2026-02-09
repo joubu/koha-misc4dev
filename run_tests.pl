@@ -152,7 +152,24 @@ if ( $run_all_tests || $run_all_perl_tests || $run_selenium_tests_only ) {
 }
 
 if ( $run_all_tests || $run_all_perl_tests ) {
-    push @commands, get_commands_to_upgrade_db();
+    push @commands,
+      map { { command => $_, abort_on_failure => 1 } }
+      get_commands_to_upgrade_db();
+
+    push @commands,
+      {
+        command => build_prove_command(
+            {
+                env         => $env,
+                prove_cpus  => $prove_cpus,
+                prove_rules => [],
+                prove_opts  => [],
+                prove_files => ['t/db_dependent/check_sysprefs.t'],
+            }
+        ),
+        abort_on_failure => 1
+      };
+
     push @commands, get_commands_to_reset_db();
 }
 
@@ -160,7 +177,9 @@ my ( @prove_rules, @prove_opts, @prove_files, @cypress_files );
 
 if ( $run_db_upgrade_only ) {
     push @commands, get_commands_to_reset_db();
-    push @commands, get_commands_to_upgrade_db();
+    push @commands,
+      map { { command => $_, abort_on_failure => 1 } }
+      get_commands_to_upgrade_db();
 }
 elsif ( $run_db_compare_only ) {
     push @commands, get_commands_to_reset_db();
