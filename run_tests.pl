@@ -162,9 +162,11 @@ if ( $run_db_upgrade_only ) {
     push @commands, get_commands_to_reset_db();
     push @commands, get_commands_to_upgrade_db();
 }
-elsif ( $run_db_compare_only ) {
+elsif ($run_db_compare_only) {
     push @commands, get_commands_to_reset_db();
-    push @commands, get_commands_to_compare_db();
+    push @commands,
+      map { { command => $_, abort_on_failure => 1 } }
+      get_commands_to_compare_db();
 }
 else {
     @prove_rules = ( 'par=t/db_dependent/00-strict.t', 'par=xt/tt_tidy.t', 'seq=t/db_dependent/**.t' );
