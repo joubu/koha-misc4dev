@@ -28,6 +28,7 @@ my $userid;
 my $password;
 my $koha_dir;
 my $elasticsearch;
+my $install_plugins;
 my $gitify_dir;
 my $opac_base_url;
 my $intranet_base_url;
@@ -37,6 +38,7 @@ my $use_existing_db;
 GetOptions(
     'elasticsearch'       => \$elasticsearch,
     'gitify_dir=s'        => \$gitify_dir,
+    'install-plugins'     => \$install_plugins,
     'instance=s'          => \$instance,
     'intranet-base-url=s' => \$intranet_base_url,
     'koha_dir=s'          => \$koha_dir,
@@ -142,6 +144,13 @@ exit(1) unless $success;
 $cmd = "PERL5LIB=$PERL5LIB perl $misc_dir/reset_plack.pl --koha_dir=$koha_dir --instance=$instance";
 ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
 exit(1) unless $success;
+
+# Install plugins
+if ($install_plugins) {
+    $cmd = "sudo koha-shell $instance -p -c 'PERL5LIB=$PERL5LIB perl $koha_dir/misc/devel/install_plugins.pl'";
+    ( $success, $error_code, $full_buf, $stdout_buf, $stderr_buf ) = run( command => $cmd, verbose => 1 );
+    exit(1) unless $success;
+}
 
 # Restart Apache
 $cmd = "sudo service apache2 restart";
