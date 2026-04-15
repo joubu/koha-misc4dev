@@ -17,8 +17,9 @@
 
 use Modern::Perl;
 use File::Basename qw( dirname );
-use IPC::Cmd qw( run );
 use File::chdir;
+use IPC::Cmd qw( run );
+use Sys::CPU qw( cpu_count );
 
 use Getopt::Long;
 use Pod::Usage;
@@ -98,13 +99,14 @@ $env_path          ||= $ENV{PATH};
 $node_path         ||= $ENV{NODE_PATH}         || '/kohadevbox/node_modules';
 $selenium_addr     ||= $ENV{SELENIUM_ADDR}     || 'selenium';
 $selenium_port     ||= $ENV{SELENIUM_PORT}     || 4444;
-$prove_cpus        ||= $ENV{KOHA_PROVE_CPUS};
+$prove_cpus        ||= $ENV{KOHA_PROVE_CPUS}   || ( cpu_count() - 1 );
 $with_coverage     ||= $ENV{COVERAGE}          || 0;
 $ci_incremental_runs          ||= $ENV{KOHA_CI_INCREMENTAL_RUNS}         || '';
 $ci_incremental_runs_token    ||= $ENV{KOHA_CI_INCREMENTAL_RUNS_TOKEN}   || '';
 $ci_incremental_runs_report   ||= $ENV{KOHA_CI_INCREMENTAL_RUNS_REPORT}  || '';
 $ci_incremental_runs_repo_url ||= $ENV{KOHA_CI_INCREMENTAL_RUN_REPO_URL} || '';
 
+$prove_cpus = 1 if $prove_cpus < 1;
 my $create_success_file = exists $ENV{RUN_TESTS_AND_EXIT} && $ENV{RUN_TESTS_AND_EXIT} eq 'yes';
 
 pod2usage("Cannot run tests, koha-dir does not seem to be a Koha src directory")
