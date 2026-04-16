@@ -99,7 +99,9 @@ $env_path          ||= $ENV{PATH};
 $node_path         ||= $ENV{NODE_PATH}         || '/kohadevbox/node_modules';
 $selenium_addr     ||= $ENV{SELENIUM_ADDR}     || 'selenium';
 $selenium_port     ||= $ENV{SELENIUM_PORT}     || 4444;
+warn "1 - $prove_cpus";
 $prove_cpus        ||= $ENV{KOHA_PROVE_CPUS}   || ( cpu_count() - 1 );
+warn "2 - $prove_cpus";
 $with_coverage     ||= $ENV{COVERAGE}          || 0;
 $ci_incremental_runs          ||= $ENV{KOHA_CI_INCREMENTAL_RUNS}         || '';
 $ci_incremental_runs_token    ||= $ENV{KOHA_CI_INCREMENTAL_RUNS_TOKEN}   || '';
@@ -107,6 +109,8 @@ $ci_incremental_runs_report   ||= $ENV{KOHA_CI_INCREMENTAL_RUNS_REPORT}  || '';
 $ci_incremental_runs_repo_url ||= $ENV{KOHA_CI_INCREMENTAL_RUN_REPO_URL} || '';
 
 $prove_cpus = 1 if $prove_cpus < 1;
+warn "3 - $prove_cpus";
+die;
 my $create_success_file = exists $ENV{RUN_TESTS_AND_EXIT} && $ENV{RUN_TESTS_AND_EXIT} eq 'yes';
 
 pod2usage("Cannot run tests, koha-dir does not seem to be a Koha src directory")
@@ -118,6 +122,7 @@ my $env = {
     KOHA_CI_INCREMENTAL_RUNS_TOKEN   => $ci_incremental_runs_token,
     KOHA_CI_INCREMENTAL_RUNS_REPORT  => $ci_incremental_runs_report,
     KOHA_CI_INCREMENTAL_RUN_REPO_URL => $ci_incremental_runs_repo_url,
+    KOHA_PROVE_CPUS                  => $prove_cpus,
     KOHA_NO_TABLE_LOCKS              => 1,
     KOHA_INTRANET_URL                => $intranet_base_url,
     KOHA_OPAC_URL                    => $opac_base_url,
